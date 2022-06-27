@@ -1,8 +1,9 @@
-# 将条形码生成图片
+# 生成条形码或二维码图片
 
 import os, datetime, time
 import tkinter as tk
 from tkinter import filedialog
+
 # import barcode
 # from barcode.writer import ImageWriter
 
@@ -17,25 +18,29 @@ print("请选择（输入序号）： \n"
       "3.打开文件夹下所有文件")
 choose = input("您的选择：")
 chosen = int(choose)
-if chosen == 1:
-    # 选择单个文件
-    # print("您的选择是：1.打开单个文件")
-    file_path = filedialog.askopenfile(title="Secret txt or xlsx file", filetypes=[("文本文档或表格", ".txt .xls .xlsx")])
-    print(file_path)
-elif chosen == 2:
-    # 限制格式选择多个文件
-    print("您的选择是：2.打开多个文件")
-    file_paths = filedialog.askopenfiles(title="Select TXT & XLSX files",
-                                         filetypes=[("文本文档或表格", ".txt .xls .xlsx")])  # 字典[(A,B),(A,B),(A,B),]
-    print(file_paths)
-elif chosen == 3:
-    # 打开文件夹
-    print("您的选择是：3.打开文件夹下所有文件")
-    folder_path = filedialog.askdirectory()
-    print(folder_path)
-else:
-    print("选择错误，请重新选择！")
-    choose = input("重新选择：")
+
+
+def choose_file(chosen):
+    if chosen == 1:
+        # 选择单个文件
+        # print("您的选择是：1.打开单个文件")
+        file_path = filedialog.askopenfile(title="Select txt or xlsx file", filetypes=[("文本文档或表格", ".txt .xls .xlsx")])
+        print(file_path)
+    elif chosen == 2:
+        # 限制格式选择多个文件
+        print("您的选择是：2.打开多个文件")
+        file_paths = filedialog.askopenfiles(title="Select TXT & XLSX files",
+                                             filetypes=[("文本文档或表格", ".txt .xls .xlsx")])  # 字典[(A,B),(A,B),(A,B),]
+        print(file_paths)
+    elif chosen == 3:
+        # 打开文件夹
+        print("您的选择是：3.打开文件夹下所有文件")
+        folder_path = filedialog.askdirectory()
+        print(folder_path)
+    else:
+        print("选择错误，请重新选择！")
+        choose = input("重新选择：")
+
 
 """
 # for file in file_paths:
