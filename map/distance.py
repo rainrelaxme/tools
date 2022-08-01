@@ -1,6 +1,5 @@
 # 通过gps坐标计算两点之间距离
 # -*- coding:utf-8 -*-
-import json
 import math
 
 
@@ -13,36 +12,6 @@ def distance_two(first_pot, second_pot):
     return distance
 
 
-# import json
-
-filename = r'D:\project\python\little-tools\map\gps_pot.json'
-
-# 读取json文件
-with open(filename) as f_obj:
-    pots = json.load(f_obj)
-
-dist = []   # 运动距离
-pre_pot = []    # 前一个点
-current_pot = []    # 后一个点
-
-for item in pots:
-    # print(f"纬度：{item['latitude']}, 经度：{item['longitude']}")
-    # 前后两个点相减
-    pre_pot = current_pot
-    current_pot = [item['latitude'], item['longitude']]
-    # if item == 0:
-    #     current_pot = [item['latitude'], item['longitude']]
-    #     pre_pot = []
-    #     break
-    # else:
-    #     pre_pot = current_pot
-    #     current_pot = [item['latitude'], item['longitude']]
-    if not pre_pot:
-        pass
-    else:
-        dist.append(distance_two(pre_pot, current_pot))
-
-
 def total(my_list):
     # 计算总和
     sum = 0
@@ -51,6 +20,5 @@ def total(my_list):
     return sum
 
 
-distance_sum = total(dist)
-print(f"共{len(dist)}个数据：\n{dist}\n总和是{distance_sum}")
+
 
