@@ -2,10 +2,10 @@
 # -*- coding:utf-8 -*-
 
 import os,re
-path=input('请输入文件路径(结尾加上/)：')       
 
+path = input('请输入文件路径(结尾加上/)：')
 
-fileList=os.listdir(path)			#获取该目录下所有文件，存入列表中
+fileList = os.listdir(path)  # 获取该目录下所有文件，存入列表中
 
 '''
 #part 1
@@ -57,16 +57,15 @@ for i in fileList:
 	
 	'''
 
-
 n = 0
 for i in fileList:
-	name_separate = os.path.splitext(i)
-	name_forwar = name_separate[0]
-	name_suffix = name_separate[1]
-	
-	oldname = path + os.sep +fileList[n]
-	newname = os.path.join(path, str(n+1) + name_suffix)
-	os.rename(oldname,newname )  #用os模块中的rename方法对文件改名
-	print(oldname,'======>',newname) 
+    name_separate = os.path.splitext(i)
+    name_forwar = name_separate[0]
+    name_suffix = name_separate[1]
 
-	n+=1
+    oldname = path + os.sep + fileList[n]
+    newname = os.path.join(path, str(n + 1) + name_suffix)
+    os.rename(oldname, newname)  # 用os模块中的rename方法对文件改名
+    print(oldname, '======>', newname)
+
+    n += 1
