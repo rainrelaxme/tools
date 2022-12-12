@@ -1,64 +1,60 @@
 # -*- coding:utf-8 -*-
-# authored by shawn
-import json
-
-from map.distance import distance_two, total
-
-"""
-# 计算两点之间的距离和高度差
-pot1 = [31.25781982421875, 120.73540554470486, 4.3862183718010783]
-pot2 = [31.257807617187499, 120.73540934244792, 4.9125050101429224]
-new_distance = distance_two(pot1, pot2)
-new_height = pot2[2] - pot1[2]
-print(f"两点之间的距离是{new_distance},海拔差是{new_height}")
-"""
-
-# 计算一组点之间的距离和高度差
-# import json
-# filename = r'D:\project\python\little-tools\map\gps_pot.json'
-# filename = r'D:\project\python\little-tools\map\altitude.json'
-filename = r'D:\project\python\little-tools\map\qi.json'
+# authored by rainrelaxme
+# 说明：工具的调用
 
 
-# 读取json文件
-with open(filename) as f_obj:
-    pots = json.load(f_obj)
-# print(pots)
-
-i = 0
-step = 1   # 每step取一个点
-dist_sum = []  # 运动距离
-hgt_sum_pos = []  # 爬升
-hgt_sum_neg = []  # 下降
-pre_pot = []  # 前一个点
-current_pot = []  # 后一个点
+from file_modify import file_edit as fe
+from file_modify import file_function as ff
 
 
-# step决定取多少个点
-for item in pots:
-    # step前后减
-    if i == 0 or i % step == 0:
-        pre_pot = current_pot
-        # current_pot = [item['latitude'], item['longitude'], item['alitiude']]
-        current_pot = [item['latitude'], item['longitude']]
-        if not pre_pot:
-            pass
+print('请选择工具（输入序号，Enter确认，输入q退出）：\n'
+      '1.当前文件的路径\n'
+      '2.文件夹下的文件清单\n'
+      '3.文件夹下的文件增加空格\n'
+      '4.文件夹下的文件去除空格\n'
+      '5.文件夹下的文件增加自定义字符\n'
+      '6.文件夹下的文件去除自定义字符\n')
+
+while True:
+    tool_choose = input('>>')
+    if tool_choose == "q":
+        break
+    elif tool_choose == "1":
+        result = fe.get_filepath()
+        print(result)
+    elif tool_choose == "2":
+        result = fe.get_filelist()
+        print(result)
+    elif tool_choose == "3":
+        path = input("请输入文件夹路径：")
+        if path == "q":
+            break
         else:
-            dist_sum.append(distance_two(pre_pot, current_pot))
-            """height = current_pot[2] - pre_pot[2]
-            if height <= 0:
-                hgt_sum_neg.append(height)
-            else:
-                hgt_sum_pos.append(height)
-                """
+            ff.rename_add_space(path)
+        print("已完成，请前往查看结果。")
+    elif tool_choose == "4":
+        path = input("请输入文件夹路径：")
+        if path == "q":
+            break
+        else:
+            ff.rename_sub_space(path)
+        print("已完成，请前往查看结果。")
+    elif tool_choose == "5":
+        path = input("请输入文件夹路径：")
+        x = input("请输入要增加的字符（禁止输入q）：")
+        if path == "q" or x == "q":
+            break
+        else:
+            ff.rename_add_x(path, x)
+        print("已完成，请前往查看结果。")
+    elif tool_choose == "6":
+        path = input("请输入文件夹路径：")
+        x = input("请输入要去除的字符（禁止输入q）：")
+        if path == "q" or x == "q":
+            break
+        else:
+            ff.rename_sub_x(path, x)
+        print("已完成，请前往查看结果。")
     else:
-        pass
-    i = i + 1
+        print('选择错误，请重新选择！')
 
-
-distance_sum = total(dist_sum)
-height_sum_pos = total(hgt_sum_pos)
-height_sum_neg = total(hgt_sum_neg)
-print(f"共{len(dist_sum)}个数据,距离总和是{distance_sum},共爬升{height_sum_pos},下降{height_sum_neg}")
-print(f"\n距离差是：{dist_sum}")
-print(f"\n爬升：{hgt_sum_pos}\n下降：{hgt_sum_neg}")
