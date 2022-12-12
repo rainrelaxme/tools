@@ -84,3 +84,17 @@ def rename_sub_x(path, x):
         else:
             # 递归文件夹修改文件名
             rename_sub_x(absolute_file, x)
+
+
+def format_name1(path, girl):
+    """rename1(name, girl)"""
+    pass
+
+
+def format_name2(path, forward_name, start_num: int):
+    """rename2(name, forward_name, start_num: int)"""
+    pass
+
+
+def excel_merge():
+    """利用Python将多个excel文件合并为一个文件"""

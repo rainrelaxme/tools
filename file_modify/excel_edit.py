@@ -1,47 +1,47 @@
 # -*- coding:utf-8 -*-
 # authored by rainrelaxme
-# 利用Python将多个excel文件合并为一个文件
+# 操作excel文件
 
 # 导入需要使用的包
 import xlrd  # 读取Excel文件的包
 import xlsxwriter  # 将文件写入Excel的包
 
 
-# 打开一个excel文件
 def open_xls(file):
-    f = xlrd.open_workbook(file)
-    return f
+    """打开一个excel文件"""
+    file_opened = xlrd.open_workbook(file)
+    return file_opened
 
 
-# 获取excel中所有的sheet表
-def getsheet(f):
-    return f.sheets()
+def get_sheet(file):
+    """获取excel中所有的sheet表"""
+    return file.sheets()
 
 
-# 获取sheet表的行数
-def get_Allrows(f, sheet):
-    table = f.sheets()[sheet]
+def get_sheet_num(file):
+    """获取sheet表的个数"""
+    num = 0
+    sh = get_sheet(file)
+    for sheet in sh:
+        num += 1
+    return num
+
+
+def get_all_rows(file, sheet):
+    """获取sheet表的行数"""
+    table = file.sheets()[sheet]
     return table.nrows
 
 
-# 读取文件内容并返回行内容
-def getFile(file, shnum):
-    f = open_xls(file)
-    table = f.sheets()[shnum]
+def get_file(file, sheet_num):
+    """读取文件内容并返回行内容"""
+    file_opened = open_xls(file)
+    table = file_opened.sheets()[sheet_num]
     num = table.nrows
     for row in range(num):
         rdata = table.row_values(row)
         datavalue.append(rdata)
     return datavalue
-
-
-# 获取sheet表的个数
-def getshnum(f):
-    x = 0
-    sh = getsheet(f)
-    for sheet in sh:
-        x += 1
-    return x
 
 
 # 函数入口
