@@ -5,6 +5,23 @@
 # 导入需要使用的包
 import xlrd  # 读取Excel文件的包
 import xlsxwriter  # 将文件写入Excel的包
+import tkinter as tk  # 导入打开文件浏览器的包
+from tkinter import filedialog
+
+
+def choose_file(is_single: int = 0, filetypes=None):
+    """用文件浏览器选择文件"""
+    if filetypes is None:   # 形参调整，不用写在括号里
+        # 只打开一种格式文件
+        # inputPath=askopenfilename(title="Select PDF file", filetypes=(("pdf files", "*.pdf"),))
+        filetypes = [("All files", "*.*")]
+    root = tk.Tk()  # 实例化
+    root.withdraw()  # 销毁窗口
+    if is_single == 0:  # is_single=0 ：选择单个文件
+        file_path = tk.filedialog.askopenfilename(filetypes=filetypes)
+    else:
+        file_path = tk.filedialog.askopenfilenames(filetypes=filetypes)
+    return file_path
 
 
 def open_xls(file):
@@ -42,29 +59,3 @@ def get_file(file, sheet_num):
         rdata = table.row_values(row)
         datavalue.append(rdata)
     return datavalue
-
-
-# 函数入口
-if __name__ == '__main__':
-    # 定义要合并的excel文件列表
-    allxls = ['F:/test/excel1.xlsx', 'F:/test/excel2.xlsx']  # 列表中的为要读取文件的路径
-    # 存储所有读取的结果
-    datavalue = []
-    for fl in allxls:
-        f = open_xls(fl)
-        x = getshnum(f)
-        for shnum in range(x):
-            print("正在读取文件：" + str(fl) + "的第" + str(shnum) + "个sheet表的内容...")
-            rvalue = getFilect(fl, shnum)
-    # 定义最终合并后生成的新文件
-    endfile = 'F:/test/excel3.xlsx'
-    wb = xlsxwriter.Workbook(endfile)
-    # 创建一个sheet工作对象
-    ws = wb.add_worksheet()
-    for a in range(len(rvalue)):
-        for b in range(len(rvalue[a])):
-            c = rvalue[a][b]
-            ws.write(a, b, c)
-    wb1.close()
-
-    print("文件合并完成")

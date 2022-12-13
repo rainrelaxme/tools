@@ -5,7 +5,7 @@
 
 from file_modify import file_edit as fe
 from file_modify import file_function as ff
-
+from file_modify import excel_edit as ee
 
 print('请选择工具（输入序号，Enter确认，输入q退出）：\n'
       '1.当前文件的路径\n'
@@ -13,7 +13,9 @@ print('请选择工具（输入序号，Enter确认，输入q退出）：\n'
       '3.文件夹下的文件增加空格\n'
       '4.文件夹下的文件去除空格\n'
       '5.文件夹下的文件增加自定义字符\n'
-      '6.文件夹下的文件去除自定义字符\n')
+      '6.文件夹下的文件去除自定义字符\n'
+      '7.文件夹下的Excel合并\n'
+      )
 
 while True:
     tool_choose = input('>>')
@@ -55,6 +57,10 @@ while True:
         else:
             ff.rename_sub_x(path, x)
         print("已完成，请前往查看结果。")
+    elif tool_choose == "7":
+        print("请选择文件：")
+        files = ee.choose_file(is_single=1)
+        print("已完成，请前往查看结果。")
+        print("类型是：", type(files), "\n已选择的文件是：", files)
     else:
         print('选择错误，请重新选择！')
-
