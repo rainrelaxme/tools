@@ -3,8 +3,10 @@
 # 说明：文件工具的中间过程及最终函数实现
 
 import os
+import xlsxwriter
 
-from . import file_edit as fe
+import file_edit
+import excel_edit
 
 
 def rename_add_space(path):
@@ -17,9 +19,9 @@ def rename_add_space(path):
                 continue
             else:
                 old_name = absolute_file
-                forward_name = fe.split_name(file)[0]
-                forward_name = fe.add_space(forward_name)
-                back_name = fe.split_name(file)[1]
+                forward_name = file_edit.split_name(file)[0]
+                forward_name = file_edit.add_space(forward_name)
+                back_name = file_edit.split_name(file)[1]
                 new_name = path + "/" + forward_name + back_name
                 os.rename(old_name, new_name)
         else:
@@ -37,9 +39,9 @@ def rename_sub_space(path):
                 continue
             else:
                 old_name = absolute_file
-                forward_name = fe.split_name(file)[0]
-                forward_name = fe.sub_space1(forward_name)
-                back_name = fe.split_name(file)[1]
+                forward_name = file_edit.split_name(file)[0]
+                forward_name = file_edit.sub_space1(forward_name)
+                back_name = file_edit.split_name(file)[1]
                 new_name = path + "/" + forward_name + back_name
                 os.rename(old_name, new_name)
         else:
@@ -57,9 +59,9 @@ def rename_add_x(path, x):
                 continue
             else:
                 old_name = absolute_file
-                forward_name = fe.split_name(file)[0]
-                forward_name = fe.add_x(forward_name, x)
-                back_name = fe.split_name(file)[1]
+                forward_name = file_edit.split_name(file)[0]
+                forward_name = file_edit.add_x(forward_name, x)
+                back_name = file_edit.split_name(file)[1]
                 new_name = path + "/" + forward_name + back_name
                 os.rename(old_name, new_name)
         else:
@@ -77,9 +79,9 @@ def rename_sub_x(path, x):
                 continue
             else:
                 old_name = absolute_file
-                forward_name = fe.split_name(file)[0]
-                forward_name = fe.sub_x(forward_name, x)
-                back_name = fe.split_name(file)[1]
+                forward_name = file_edit.split_name(file)[0]
+                forward_name = file_edit.sub_x(forward_name, x)
+                back_name = file_edit.split_name(file)[1]
                 new_name = path + "/" + forward_name + back_name
                 os.rename(old_name, new_name)
         else:
@@ -97,33 +99,31 @@ def format_name2(path, forward_name, start_num: int):
     pass
 
 
-def excel_merge(files: tuple = ()):
+def excel_merge(files: tuple):
     """利用Python将多个excel文件合并为一个文件"""
-    for file in files:
-        f_open = open
-
-
-# 函数入口
-if __name__ == '__main__':
-    # 定义要合并的excel文件列表
-    allxls = ['F:/test/excel1.xlsx', 'F:/test/excel2.xlsx']  # 列表中的为要读取文件的路径
+    # files = ('C:/Users/ichuk/Desktop/田野考古的系络图与记录系统.pdf', 'C:/Users/ichuk/Desktop/智慧报表.docx')
     # 存储所有读取的结果
-    datavalue = []
-    for fl in allxls:
-        f = open_xls(fl)
-        x = getshnum(f)
-        for shnum in range(x):
-            print("正在读取文件：" + str(fl) + "的第" + str(shnum) + "个sheet表的内容...")
-            rvalue = getFilect(fl, shnum)
+    value = []
+    for file in files:
+        f_open = excel_edit.open_xls(file)
+        all_sheet = excel_edit.get_sheet_num(f_open)
+        for sh_num in range(all_sheet):
+            print("正在读取文件：" + str(file) + "的第" + str(sh_num) + "个sheet表的内容...")
+            value = excel_edit.get_file(file, sh_num)
     # 定义最终合并后生成的新文件
-    endfile = 'F:/test/excel3.xlsx'
-    wb = xlsxwriter.Workbook(endfile)
-    # 创建一个sheet工作对象
-    ws = wb.add_worksheet()
-    for a in range(len(rvalue)):
-        for b in range(len(rvalue[a])):
-            c = rvalue[a][b]
-            ws.write(a, b, c)
-    wb1.close()
+    filetypes = [("Microsoft Excel文件", "*.xlsx"),
+                 ("Microsoft Excel文件", "*.xls"),
+                 ("CSV文件", "*.csv")]
+    result_file = excel_edit.save_file(filetypes=filetypes)
+    print(result_file.name)
+    # work_file = xlsxwriter.workbook(result_file.name)  # 创建工作表
+    # work_sheet = work_file.add_sheet()  # 默认创建sheet1
+    # for i in range(len(value)):
+    #     for j in range(len(value[i])):
+    #         k = value[i][j]
+    #         work_sheet.write(i, j, k)
+    # work_file.close()
 
-    print("文件合并完成")
+
+all_file = ('E:/project/pythonProject/Little_tools/src/1.xlsx', 'E:/project/pythonProject/Little_tools/src/2.xlsx')
+excel_merge(all_file)

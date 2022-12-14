@@ -3,10 +3,12 @@
 # 操作excel文件
 
 # 导入需要使用的包
-import xlrd  # 读取Excel文件的包
-import xlsxwriter  # 将文件写入Excel的包
+import xlrd  # version：1.2.0，读取Excel文件的包，不能用2.0以上版本
 import tkinter as tk  # 导入打开文件浏览器的包
 from tkinter import filedialog
+
+# 导入自己编写的模块
+from file_edit import add_x
 
 
 def choose_file(is_single: int = 0, filetypes=None):
@@ -22,6 +24,17 @@ def choose_file(is_single: int = 0, filetypes=None):
     else:
         file_path = tk.filedialog.askopenfilenames(filetypes=filetypes)
     return file_path
+
+
+def save_file(initialfile="Untitled", filetypes=None, defaultextension=None):
+    """打开文件浏览器，存储文件"""
+    """initialfile:默认文件名，filetypes：文件后缀名选择，"""
+    if filetypes is None:   # 形参调整，不用写在括号里
+        filetypes = [("All files", "*.*")]
+    root = tk.Tk()  # 实例化
+    root.withdraw()  # 销毁窗口
+    file = tk.filedialog.asksaveasfile(filetypes=filetypes, initialfile=initialfile, defaultextension=defaultextension)
+    return file
 
 
 def open_xls(file):
@@ -52,10 +65,13 @@ def get_all_rows(file, sheet):
 
 def get_file(file, sheet_num):
     """读取文件内容并返回行内容"""
+    data_value = []
     file_opened = open_xls(file)
     table = file_opened.sheets()[sheet_num]
     num = table.nrows
     for row in range(num):
         rdata = table.row_values(row)
-        datavalue.append(rdata)
-    return datavalue
+        data_value.append(rdata)
+    return data_value
+
+
