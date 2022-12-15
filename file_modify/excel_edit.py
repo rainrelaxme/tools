@@ -3,6 +3,7 @@
 # 操作excel文件
 
 # 导入需要使用的包
+import os
 import xlrd  # version：1.2.0，读取Excel文件的包，不能用2.0以上版本
 import tkinter as tk  # 导入打开文件浏览器的包
 from tkinter import filedialog
@@ -13,7 +14,7 @@ from file_edit import add_x
 
 def choose_file(is_single: int = 0, filetypes=None):
     """用文件浏览器选择文件"""
-    if filetypes is None:   # 形参调整，不用写在括号里
+    if filetypes is None:  # 形参调整，不用写在括号里
         # 只打开一种格式文件
         # inputPath=askopenfilename(title="Select PDF file", filetypes=(("pdf files", "*.pdf"),))
         filetypes = [("All files", "*.*")]
@@ -29,11 +30,16 @@ def choose_file(is_single: int = 0, filetypes=None):
 def save_file(initialfile="Untitled", filetypes=None, defaultextension=None):
     """打开文件浏览器，存储文件"""
     """initialfile:默认文件名，filetypes：文件后缀名选择，"""
-    if filetypes is None:   # 形参调整，不用写在括号里
+    if filetypes is None:  # 形参调整，不用写在括号里
         filetypes = [("All files", "*.*")]
     root = tk.Tk()  # 实例化
     root.withdraw()  # 销毁窗口
     file = tk.filedialog.asksaveasfile(filetypes=filetypes, initialfile=initialfile, defaultextension=defaultextension)
+    # 妄图修改使其添加默认的后缀名，fail
+    # file.close()
+    # file_new_name = add_x(file.name, ".xlsx")
+    # os.rename(file.name, file_new_name)
+    # return open(file_new_name, "w")
     return file
 
 
@@ -75,3 +81,4 @@ def get_file(file, sheet_num):
     return data_value
 
 
+# print(get_file('E:/project/pythonProject/Little_tools/src/3.xlsx', 0))

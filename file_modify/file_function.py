@@ -101,29 +101,32 @@ def format_name2(path, forward_name, start_num: int):
 
 def excel_merge(files: tuple):
     """利用Python将多个excel文件合并为一个文件"""
-    # files = ('C:/Users/ichuk/Desktop/田野考古的系络图与记录系统.pdf', 'C:/Users/ichuk/Desktop/智慧报表.docx')
     # 存储所有读取的结果
     value = []
     for file in files:
         f_open = excel_edit.open_xls(file)
-        all_sheet = excel_edit.get_sheet_num(f_open)
-        for sh_num in range(all_sheet):
-            print("正在读取文件：" + str(file) + "的第" + str(sh_num) + "个sheet表的内容...")
-            value = excel_edit.get_file(file, sh_num)
+        sh_num = excel_edit.get_sheet_num(f_open)
+        for sheet in range(sh_num):
+            print("正在读取文件：" + str(file) + "的第" + str(sheet+1) + "个sheet表的内容...")
+            sheet_value = excel_edit.get_file(file, sheet)
+            if sheet_value:
+                value.append(sheet_value)
+    print(value)
     # 定义最终合并后生成的新文件
     filetypes = [("Microsoft Excel文件", "*.xlsx"),
                  ("Microsoft Excel文件", "*.xls"),
                  ("CSV文件", "*.csv")]
-    result_file = excel_edit.save_file(filetypes=filetypes)
-    print(result_file.name)
-    # work_file = xlsxwriter.workbook(result_file.name)  # 创建工作表
-    # work_sheet = work_file.add_sheet()  # 默认创建sheet1
-    # for i in range(len(value)):
-    #     for j in range(len(value[i])):
-    #         k = value[i][j]
-    #         work_sheet.write(i, j, k)
-    # work_file.close()
+    result_file = excel_edit.save_file(filetypes=filetypes, defaultextension=filetypes[0][1])
+    work_file = xlsxwriter.Workbook(result_file.name)  # 创建工作表
+    work_sheet = work_file.add_worksheet()  # 默认创建sheet1
+    for sheet in range(len(value)):
+        for row in range(len(value[sheet])):
+            for col in range(len(value[sheet][row])):
+                cell = value[sheet][row][col]
+                work_sheet.write(row, col, cell)
+    work_file.close()
 
 
 all_file = ('E:/project/pythonProject/Little_tools/src/1.xlsx', 'E:/project/pythonProject/Little_tools/src/2.xlsx')
+# all_file = ('E:/project/pythonProject/Little_tools/src/3.xlsx')
 excel_merge(all_file)
