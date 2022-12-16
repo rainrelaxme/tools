@@ -3,7 +3,7 @@
 # 说明：文件工具的中间过程及最终函数实现
 
 import os
-import xlsxwriter
+import xlsxwriter   # 只能写入xlsx，如果要写入xls要用xlwt
 
 import file_edit
 import excel_edit
@@ -110,8 +110,16 @@ def excel_merge(files: tuple):
             print("正在读取文件：" + str(file) + "的第" + str(sheet+1) + "个sheet表的内容...")
             sheet_value = excel_edit.get_file(file, sheet)
             if sheet_value:
-                value.append(sheet_value)
-    print(value)
+                if value:
+                    # 第一个表格直接读取，后续表格判断表头是否相同，不同不允许合并，相同则把表头去除
+                    if sheet_value[0] != value[0]:
+                        return "Error：表头不同，无法合并"
+                    else:
+                        for row in sheet_value[1:len(sheet_value)-1]:
+                            value.append(row)
+                else:
+                    for row in sheet_value:
+                        value.append(row)
     # 定义最终合并后生成的新文件
     filetypes = [("Microsoft Excel文件", "*.xlsx"),
                  ("Microsoft Excel文件", "*.xls"),
@@ -119,14 +127,14 @@ def excel_merge(files: tuple):
     result_file = excel_edit.save_file(filetypes=filetypes, defaultextension=filetypes[0][1])
     work_file = xlsxwriter.Workbook(result_file.name)  # 创建工作表
     work_sheet = work_file.add_worksheet()  # 默认创建sheet1
-    for sheet in range(len(value)):
-        for row in range(len(value[sheet])):
-            for col in range(len(value[sheet][row])):
-                cell = value[sheet][row][col]
-                work_sheet.write(row, col, cell)
+    for row in range(len(value)):
+        for col in range(len(value[row])):
+            cell = value[row][col]
+            work_sheet.write(row, col, cell)    # 向行列对应的单元格写入内容
     work_file.close()
+    print("ok")
 
 
 all_file = ('E:/project/pythonProject/Little_tools/src/1.xlsx', 'E:/project/pythonProject/Little_tools/src/2.xlsx')
-# all_file = ('E:/project/pythonProject/Little_tools/src/3.xlsx')
+# # all_file = ('E:/project/pythonProject/Little_tools/src/3.xlsx')
 excel_merge(all_file)

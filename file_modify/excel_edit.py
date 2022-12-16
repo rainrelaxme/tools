@@ -3,13 +3,9 @@
 # 操作excel文件
 
 # 导入需要使用的包
-import os
 import xlrd  # version：1.2.0，读取Excel文件的包，不能用2.0以上版本
 import tkinter as tk  # 导入打开文件浏览器的包
 from tkinter import filedialog
-
-# 导入自己编写的模块
-from file_edit import add_x
 
 
 def choose_file(is_single: int = 0, filetypes=None):
@@ -80,5 +76,3 @@ def get_file(file, sheet_num):
         data_value.append(rdata)
     return data_value
 
-
-# print(get_file('E:/project/pythonProject/Little_tools/src/3.xlsx', 0))
