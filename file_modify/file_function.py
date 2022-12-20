@@ -5,8 +5,8 @@
 import os
 import xlsxwriter   # 只能写入xlsx，如果要写入xls要用xlwt
 
-import file_edit
-import excel_edit
+from file_modify import file_edit
+from file_modify import excel_edit
 
 
 def rename_add_space(path):
@@ -135,6 +135,6 @@ def excel_merge(files: tuple):
     print("ok")
 
 
-all_file = ('E:/project/pythonProject/Little_tools/src/1.xlsx', 'E:/project/pythonProject/Little_tools/src/2.xlsx')
-# # all_file = ('E:/project/pythonProject/Little_tools/src/3.xlsx')
-excel_merge(all_file)
+# all_file = ('E:/project/pythonProject/Little_tools/src/1.xlsx', 'E:/project/pythonProject/Little_tools/src/2.xlsx')
+# # # all_file = ('E:/project/pythonProject/Little_tools/src/3.xlsx')
+# excel_merge(all_file)

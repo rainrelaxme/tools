@@ -25,7 +25,11 @@ if __name__ == '__main__':
             result = fe.get_filepath()
             print(result)
         elif tool_choose == "2":
-            result = fe.get_filelist()
+            path = input("请输入文件夹路径：")
+            if path == "q":
+                break
+            else:
+                result = fe.get_filelist(path)
             print(result)
         elif tool_choose == "3":
             path = input("请输入文件夹路径：")
