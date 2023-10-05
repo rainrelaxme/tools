@@ -135,6 +135,33 @@ def excel_merge(files: tuple):
     print("ok")
 
 
+def is_exist(filename, path, mode=0):
+    """
+    判断文件是否已经存在，mode=0精确匹配，mode=1模糊匹配
+    如果已经存在，则返回1；不存在，则返回0.
+    """
+    file_list = os.listdir(path)
+    results = []
+    if mode == 0:
+        if filename in file_list:
+            results.append(filename)
+        else:
+            pass
+    elif mode == 1:
+        for file in file_list:
+            result = re.search(filename, file)
+            if result:
+                results.append(result.string)
+            else:
+                continue
+    else:
+        print('Error mode!')
+    if results:
+        print(results)
+        return 0, '\n', results
+    else:
+        return 1
+
 # all_file = ('E:/project/pythonProject/Little_tools/src/1.xlsx', 'E:/project/pythonProject/Little_tools/src/2.xlsx')
 # # # all_file = ('E:/project/pythonProject/Little_tools/src/3.xlsx')
 # excel_merge(all_file)
