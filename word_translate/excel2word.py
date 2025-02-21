@@ -45,7 +45,7 @@ def replace_chinese_with_english(txt_file, excel_file, output_excel, output_txt)
 
 # 示例文件路径
 txt_file = 'input.txt'  # 你的 TXT 文件路径
-excel_file = 'output - EN.xlsx'  # 包含行号、中文和英文的 Excel 文件路径
+excel_file = 'output.xlsx'  # 包含行号、中文和英文的 Excel 文件路径
 output_excel = 'replaced_results.xlsx'  # 输出的 Excel 文件路径
 output_txt = 'output.txt'  # 输出的新的 TXT 文件路径
 
