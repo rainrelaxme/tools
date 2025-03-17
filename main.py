@@ -2,9 +2,9 @@
 # authored by rainrelaxme
 # 说明：工具的调用
 
-from file_modify import file_edit as fe
-from file_modify import file_function as ff
-from file_modify import excel_edit as ee
+from office_tools import file_edit as fe
+from office_tools import file_function as ff
+from office_tools import excel_edit as ee
 
 if __name__ == '__main__':
     print('请选择工具（输入序号，Enter确认，输入q退出）：\n'
