@@ -6,10 +6,13 @@
 @Author: RainRelaxMe
 @Date: 2025/3/10 21:36
 """
-
+"""
+用来将文件夹下的所有文件名，整理输出到一个Excel下。
+"""
 
 import os
 from openpyxl import Workbook
+
 
 def extract_filenames_to_excel(folder_path, output_excel_path):
     # 创建一个新的工作簿和工作表
@@ -29,6 +32,7 @@ def extract_filenames_to_excel(folder_path, output_excel_path):
     # 保存Excel文件
     wb.save(output_excel_path)
     print(f"File names have been saved to {output_excel_path}")
+
 
 # 示例用法
 folder_path = "J:\待定\木田彩水"  # 替换为你的文件夹路径
