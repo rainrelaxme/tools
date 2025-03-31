@@ -1,6 +1,9 @@
-# Little_tools
+# little_tools
 some tools
-1. 文件名称调整
-2. 文件合并Excel
-3. GIF动图反转顺序
-4. 生成条形码
+1. 文件工具
+   1. 获取文件夹下的文件清单，存到Excel。
+   2. Excel文件合并。
+   3. 文件名称调整。
+2. 图片工具
+   1. GIF动图反转顺序
+   2. 生存条形码

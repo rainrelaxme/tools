@@ -2,8 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/Little_tools.iml" filepath="$PROJECT_DIR$/.idea/Little_tools.iml" />
       <module fileurl="file://$PROJECT_DIR$/../Learn_python/.idea/learnpython.iml" filepath="$PROJECT_DIR$/../Learn_python/.idea/learnpython.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/little_tools.iml" filepath="$PROJECT_DIR$/.idea/little_tools.iml" />
     </modules>
   </component>
 </project>

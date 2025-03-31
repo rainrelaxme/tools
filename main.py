@@ -29,7 +29,7 @@ if __name__ == '__main__':
             if path == "q":
                 break
             else:
-                result = fe.get_filelist(path)
+                result = ff.get_filelist(path,r"C:\Users\shawn\Desktop")
             print(result)
         elif tool_choose == "3":
             path = input("请输入文件夹路径：")
