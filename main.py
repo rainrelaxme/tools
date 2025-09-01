@@ -2,7 +2,8 @@
 # authored by rainrelaxme
 # 说明：工具的调用
 
-from app.view.office_tools import file_edit as fe, excel_edit as ee, file_function as ff
+from app.office import file_edit as fe, excel_edit as ee
+from app.office import file_function as ff
 
 if __name__ == '__main__':
     print('请选择工具（输入序号，Enter确认，输入q退出）：\n'
