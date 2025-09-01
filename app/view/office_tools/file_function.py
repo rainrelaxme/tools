@@ -5,8 +5,7 @@
 import os
 import xlsxwriter   # 只能写入xlsx，如果要写入xls要用xlwt
 
-from office_tools import file_edit
-from office_tools import excel_edit
+from app.view.office_tools import file_edit, excel_edit
 
 
 def rename_add_space(path):
@@ -162,6 +161,6 @@ def is_exist(filename, path, mode=0):
     else:
         return 1
 
-# all_file = ('E:/project/pythonProject/Little_tools/src/1.xlsx', 'E:/project/pythonProject/Little_tools/src/2.xlsx')
-# # # all_file = ('E:/project/pythonProject/Little_tools/src/3.xlsx')
+# all_file = ('E:/project/pythonProject/Little_tools/file/1.xlsx', 'E:/project/pythonProject/Little_tools/file/2.xlsx')
+# # # all_file = ('E:/project/pythonProject/Little_tools/file/3.xlsx')
 # excel_merge(all_file)

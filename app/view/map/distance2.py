@@ -2,7 +2,7 @@
 # authored by shawn
 import json
 
-from map.distance import distance_two, total
+from app.view.map.distance import distance_two, total
 
 """
 # 计算两点之间的距离和高度差
