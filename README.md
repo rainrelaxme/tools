@@ -1,11 +1,59 @@
-# Little_tools
-some tools
-1. 文件名称调整
-2. 文件合并Excel
-3. GIF动图反转顺序
-4. 生成条形码
+Tools
+===============
+当前最新版本： 0.9
 
-### 程序打包
+[![AUR](https://img.shields.io/badge/license-Apache%20License%202.0-blue.svg)](https://github.com/zhangdaiscott/jeecg-boot/blob/master/LICENSE)
+
+
+## 简介
+一些小工具
+
+## 安装与使用
+
+ > 环境要求: 版本要求python 3.12.11。
+
+- Get the project code
+
+```bash
+git clone https://github.com/rainrelaxme/tools.git
+```
+
+- Installation dependencies
+
+```bash
+cd tools
+
+conda activate General  # conda环境
+
+pip install -r requirements.txt # 安装包
+```
+-  Create package
+
 ```bash
 pyinstaller your_script.py
 ```
+
+## 功能清单
+
+ > * MPLM模具清单导入
+ > * Excel压缩体积：压缩其中的图片
+ > * 
+
+
+## 项目结构
+
+```
+├─main
+├─app
+│  ├─database
+│  ├─file
+│  ├─file_content
+│  ├─picture
+│  └─others
+├─file
+|  └─temp 
+└─logs
+   
+```
+
+

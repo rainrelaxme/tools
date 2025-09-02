@@ -5,7 +5,8 @@
 import os
 import xlsxwriter   # 只能写入xlsx，如果要写入xls要用xlwt
 
-from app.office import file_edit, excel_edit
+from app.office import excel_edit
+from app.file import file_edit
 
 
 def rename_add_space(path):

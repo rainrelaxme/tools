@@ -2,7 +2,7 @@
 # authored by shawn
 import json
 
-from app.map.distance import distance_two, total
+from app.others.map.distance import distance_two, total
 
 """
 # 计算两点之间的距离和高度差
@@ -15,8 +15,8 @@ print(f"两点之间的距离是{new_distance},海拔差是{new_height}")
 
 # 计算一组点之间的距离和高度差
 # import json
-# filename = r'D:\project\python\little-tools\map\gps_pot.json'
-# filename = r'D:\project\python\little-tools\map\altitude.json'
+# filename = r'D:\project\python\others\map\gps_pot.json'
+# filename = r'D:\project\python\others\map\altitude.json'
 filename = r'D:\project\python\little-tools\map\qi.json'
 
 

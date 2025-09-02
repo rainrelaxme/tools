@@ -1,3 +1,14 @@
+#!/usr/bin/env python3
+# -*- coding:utf-8 -*-
+"""
+@Project: distance.py
+@File   : excel_merge.py
+@Version:
+@Author : RainRelaxMe
+@Date   : 2025/9/1 22:16
+@Info   : 将多份Excel文件合并成同一个Excel文件
+"""
+
 import glob
 from numpy import *
 
