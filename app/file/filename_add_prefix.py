@@ -81,7 +81,8 @@ if __name__ == "__main__":
     is_index_input = input("请选择是否增加文件序列号前缀(S000X),输入y/n,默认是y:\n").strip()
     operate_way = input("请选择操作方式：\n"
                         "1. 仅修改图片文件\n"
-                        "2. 分别修改图片+json文件，同时修改json中对应的文件名，并补全imageData: null\n").strip()
+                        "2. 分别修改图片+json文件，同时修改json中对应的文件名，并补全imageData: null\n"
+                        "3. 仅补全json文件中imageData: null\n").strip()
 
     if is_index_input == "y" or is_index_input == "Y" or not is_index_input:
         # 增加序列号前缀
@@ -98,6 +99,8 @@ if __name__ == "__main__":
             # 处理剩余的JSON文件（如果有的话）
             add_image_data_to_json(target_directory)
             rename_file(target_directory, filetype=['*.json'], is_index=is_index)
+        elif operate_way == "3":
+            add_image_data_to_json(target_directory)
         print("重命名完成！")
     else:
         print("指定的目录不存在或不是有效目录！")
