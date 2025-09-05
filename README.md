@@ -31,6 +31,15 @@ pip install -r requirements.txt # 安装包
 
 ```bash
 pyinstaller your_script.py
+
+# 设置输出目录为指定路径
+pyinstaller --distpath D:/output/folder your_script.py
+
+# 示例：将输出设置到其他磁盘
+pyinstaller --distpath E:/build/dist your_script.py
+
+# 同时设置构建临时文件路径
+pyinstaller --distpath D:/dist --workpath D:/build your_script.py
 ```
 
 ## 功能清单

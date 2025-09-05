@@ -16,6 +16,8 @@ S00099_C01_P001_L3_PI127_G1_M1_20220318112324.jpg
 
 import os
 import glob
+
+from app.file import file_classify
 from app.file_content.json_edit import add_image_data_to_json, update_json_image_path
 
 
@@ -77,33 +79,42 @@ def rename_file(directory_path, filetype, is_index):
 
 if __name__ == "__main__":
     # 指定要处理的目录路径
-    target_directory = input("请输入图片所在目录路径:\n ").strip()
-    is_index_input = input("请选择是否增加文件序列号前缀(S000X),输入y/n,默认是y:\n").strip()
+    print("操作流程如下：\n"
+          "1. 取OKorNG文件夹中图片，汇总到统一一个文件夹下，运行程序，选择[1]\n"
+          "2. 导入运营端评估，导出结果\n"
+          "3. OKorNG文件夹中，NG文件夹，运行程序，选择[3]\n"
+          "4. 评估结果，运行程序，选择[4]\n"
+          "5. 人工统计数据\n")
     operate_way = input("请选择操作方式：\n"
                         "1. 仅修改图片文件\n"
                         "2. 分别修改图片+json文件，同时修改json中对应的文件名，并补全imageData: null\n"
-                        "3. 仅补全json文件中imageData: null\n").strip()
+                        "3. 仅补全json文件中imageData: null\n"
+                        "4. 在识别后的表格中（.xlsx）中添加原标注结果\n").strip()
 
-    if is_index_input == "y" or is_index_input == "Y" or not is_index_input:
-        # 增加序列号前缀
-        is_index = 0
+    if operate_way == "4":
+        file_classify.main()
     else:
-        is_index = 1
+        target_directory = input("请输入图片所在目录路径:\n ").strip()
+        is_index_input = input("请选择是否增加文件序列号前缀(S000X),输入y/n,默认是y:\n").strip()
+        if is_index_input == "y" or is_index_input == "Y" or not is_index_input:
+            # 增加序列号前缀
+            is_index = 0
+        else:
+            is_index = 1
 
-    # 检查目录是否存在
-    if os.path.exists(target_directory) and os.path.isdir(target_directory):
         if operate_way == "1":
-            rename_file(target_directory, filetype=['*.bmp', '*.jpg', '*.jpeg', '*.png', '*.gif', '*.tiff'], is_index=is_index)
+            rename_file(target_directory, filetype=['*.bmp', '*.jpg', '*.jpeg', '*.png', '*.gif', '*.tiff'],
+                        is_index=is_index)
         elif operate_way == "2":
-            rename_file(target_directory, filetype=['*.bmp', '*.jpg', '*.jpeg', '*.png', '*.gif', '*.tiff'], is_index=is_index)
+            rename_file(target_directory, filetype=['*.bmp', '*.jpg', '*.jpeg', '*.png', '*.gif', '*.tiff'],
+                        is_index=is_index)
             # 处理剩余的JSON文件（如果有的话）
             add_image_data_to_json(target_directory)
             rename_file(target_directory, filetype=['*.json'], is_index=is_index)
         elif operate_way == "3":
             add_image_data_to_json(target_directory)
-        print("重命名完成！")
-    else:
-        print("指定的目录不存在或不是有效目录！")
+    print("完成！")
+
 
 
 
