@@ -1,5 +1,6 @@
 from docx import Document
-from docx.shared import RGBColor, Pt, Inches
+from docx.enum.section import WD_ORIENTATION
+from docx.shared import RGBColor, Pt, Inches, Cm
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml.ns import qn
 import datetime
@@ -16,7 +17,6 @@ def get_content(input_path):
 
     # 处理段落
     for para_index, para in enumerate(doc.paragraphs):
-
         # 获取段落格式
         para_format = get_paragraph_format(para)
 
@@ -35,46 +35,46 @@ def get_content(input_path):
         })
 
     # 处理表格
-    # for table_index, table in enumerate(doc.tables):
-    #     table_data = {
-    #         'type': 'table',
-    #         'index': table_index,
-    #         'rows': [],
-    #         'cols': len(table.columns)
-    #     }
-    #
-    #     for row_index, row in enumerate(table.rows):
-    #         row_data = {'cells': []}
-    #         for cell_index, cell in enumerate(row.cells):
-    #             if cell.text.strip():
-    #                 cell_content = {
-    #                     'text': cell.text,
-    #                     'paragraphs': []
-    #                 }
-    #
-    #                 # 处理单元格中的段落
-    #                 for cell_para_index, cell_para in enumerate(cell.paragraphs):
-    #                     if cell_para.text.strip():
-    #                         cell_para_format = get_paragraph_format(cell_para)
-    #
-    #                         cell_runs_data = []
-    #                         for run in cell_para.runs:
-    #                             if run.text.strip():
-    #                                 run_format = get_run_format(run)
-    #                                 cell_runs_data.append(run_format)
-    #
-    #                         cell_content['paragraphs'].append({
-    #                             'para_index': cell_para_index,
-    #                             'text': cell_para.text,
-    #                             'para_format': cell_para_format,
-    #                             'runs': cell_runs_data
-    #                         })
-    #
-    #                 row_data['cells'].append(cell_content)
-    #
-    #         table_data['rows'].append(row_data)
-    #
-    #     data.append(table_data)
+    for table_index, table in enumerate(doc.tables):
+        table_data = {
+            'type': 'table',
+            'index': table_index,
+            'rows': [],
+            'cols': len(table.columns)
+        }
+
+        for row_index, row in enumerate(table.rows):
+            row_data = {'cells': []}
+            for cell_index, cell in enumerate(row.cells):
+                if cell.text.strip():
+                    cell_content = {
+                        'text': cell.text,
+                        'paragraphs': []
+                    }
+
+                    # 处理单元格中的段落
+                    for cell_para_index, cell_para in enumerate(cell.paragraphs):
+                        # 获取段落格式
+                        cell_para_format = get_paragraph_format(cell_para)
+
+                        # 获取运行(run)级别的格式
+                        cell_runs_data = []
+                        for run in cell_para.runs:
+                            run_format = get_run_format(run)
+                            cell_runs_data.append(run_format)
+
+                        cell_content['paragraphs'].append({
+                            'para_index': cell_para_index,
+                            'text': cell_para.text,
+                            'para_format': cell_para_format,
+                            'runs': cell_runs_data
+                        })
+
+                    row_data['cells'].append(cell_content)
+
+            table_data['rows'].append(row_data)
+
+        data.append(table_data)
     return data
 
 
@@ -112,11 +112,33 @@ def get_rgb_color(rgb_value):
     return None
 
 
+def set_paper_size(doc):
+    """
+    设置纸张大小和页边距:A4,页边距2/1.1/2/2
+    """
+    # 获取第一个节（默认存在）
+    section = doc.sections[0]
+
+    # 设置纸张方向（纵向或横向）
+    section.orientation = WD_ORIENTATION.PORTRAIT  # PORTRAIT: 纵向, LANDSCAPE: 横向
+
+    # 设置纸张大小（A4）
+    section.page_width = Cm(21)  # A4宽度 21cm
+    section.page_height = Cm(29.7)  # A4高度 29.7cm
+
+    # 设置页边距（上下左右）
+    section.top_margin = Cm(2)  # 上边距
+    section.bottom_margin = Cm(1.1)  # 下边距
+    section.left_margin = Cm(2)  # 左边距
+    section.right_margin = Cm(2)  # 右边距
+
+
 def create_new_document(content_data, output_path, translations=None):
     """
     根据记录的内容和格式生成新的Word文档
     """
     doc = Document()
+    set_paper_size(doc)
 
     for item in content_data:
         if item['type'] == 'paragraph':
@@ -135,34 +157,34 @@ def create_new_document(content_data, output_path, translations=None):
             # if translations and item['text'] in translations:
             #     add_translation_paragraph(doc, item['text'], translations[item['text']])
 
-        # elif item['type'] == 'table':
-        #     # 创建表格
-        #     table = doc.add_table(rows=len(item['rows']), cols=item['cols'])
-        #     table.style = 'Table Grid'
-        #
-        #     # 填充表格内容
-        #     for row_idx, row_data in enumerate(item['rows']):
-        #         for cell_idx, cell_data in enumerate(row_data['cells']):
-        #             if cell_idx < len(table.rows[row_idx].cells):
-        #                 cell = table.rows[row_idx].cells[cell_idx]
-        #
-        #                 # 清空默认段落
-        #                 for paragraph in cell.paragraphs:
-        #                     p = paragraph._element
-        #                     p.getparent().remove(p)
-        #
-        #                 # 添加内容到单元格
-        #                 if cell_data['paragraphs']:
-        #                     for para_data in cell_data['paragraphs']:
-        #                         cell_para = cell.add_paragraph()
-        #                         apply_paragraph_format(cell_para, para_data['para_format'])
-        #
-        #                         for run_data in para_data['runs']:
-        #                             run = cell_para.add_run(run_data['text'])
-        #                             apply_run_format(run, run_data)
-        #                 else:
-        #                     # 如果没有详细的段落信息，只添加文本
-        #                     cell.text = cell_data['text']
+        elif item['type'] == 'table':
+            # 创建表格
+            table = doc.add_table(rows=len(item['rows']), cols=item['cols'])
+            table.style = 'Table Grid'
+
+            # 填充表格内容
+            for row_idx, row_data in enumerate(item['rows']):
+                for cell_idx, cell_data in enumerate(row_data['cells']):
+                    if cell_idx < len(table.rows[row_idx].cells):
+                        cell = table.rows[row_idx].cells[cell_idx]
+
+                        # 清空默认段落
+                        for paragraph in cell.paragraphs:
+                            p = paragraph._element
+                            p.getparent().remove(p)
+
+                        # 添加内容到单元格
+                        if cell_data['paragraphs']:
+                            for para_data in cell_data['paragraphs']:
+                                cell_para = cell.add_paragraph()
+                                apply_paragraph_format(cell_para, para_data['para_format'])
+
+                                for run_data in para_data['runs']:
+                                    run = cell_para.add_run(run_data['text'])
+                                    apply_run_format(run, run_data)
+                        else:
+                            # 如果没有详细的段落信息，只添加文本
+                            cell.text = cell_data['text']
 
     # 保存文档
     doc.save(output_path)
@@ -175,6 +197,7 @@ def apply_paragraph_format(paragraph, format_info):
     if format_info.get('alignment'):
         alignment_map = {
             'CENTER': WD_ALIGN_PARAGRAPH.CENTER,
+            'CENTER (1)': WD_ALIGN_PARAGRAPH.CENTER,
             'RIGHT': WD_ALIGN_PARAGRAPH.RIGHT,
             'JUSTIFY': WD_ALIGN_PARAGRAPH.JUSTIFY,
             'LEFT': WD_ALIGN_PARAGRAPH.LEFT
@@ -192,8 +215,12 @@ def apply_paragraph_format(paragraph, format_info):
 
     if space_before is not None:
         paragraph.paragraph_format.space_before = space_before
+
     if space_after is not None:
         paragraph.paragraph_format.space_after = space_after
+    else:
+        paragraph.paragraph_format.space_after = 0  # 段落后间距None会默认设置为10，需设置为0
+
     if line_spacing is not None:
         paragraph.paragraph_format.line_spacing = line_spacing
     if first_line_indent is not None:
@@ -216,6 +243,14 @@ def apply_run_format(run, run_data):
     font_name = run_data.get('font_name')
     if font_name:
         run.font.name = font_name
+        run.element.rPr.rFonts.set(qn('w:eastAsia'), font_name)
+    # 无font_name时采用默认字体
+    if run.text.strip():
+        run.font.name = 'Times New Roman'  # 设置西文字体
+        run.element.rPr.rFonts.set(qn('w:eastAsia'), u'宋体')  # 设置中文字体
+    else:
+        run.font.name = u'宋体'
+        run.element.rPr.rFonts.set(qn('w:eastAsia'), u'宋体')  # 设置中文字体
 
     font_color = run_data.get('font_color')
     if font_color:
@@ -241,30 +276,6 @@ def add_translation_paragraph(doc, original_text, translations):
         para.add_run(translations['vietnamese'])
 
     doc.add_paragraph()  # 添加空行分隔
-
-
-# def create_simple_document(content_data, output_path):
-#     """
-#     创建简化版文档，只复制文本内容
-#     """
-#     doc = Document()
-#
-#     for item in content_data:
-#         if item['type'] == 'paragraph':
-#             para = doc.add_paragraph(item['text'])
-#
-#         elif item['type'] == 'table':
-#             # 创建表格
-#             table = doc.add_table(rows=len(item['rows']), cols=item['cols'])
-#             table.style = 'Table Grid'
-#
-#             for row_idx, row_data in enumerate(item['rows']):
-#                 for cell_idx, cell_data in enumerate(row_data['cells']):
-#                     if cell_idx < len(table.rows[row_idx].cells):
-#                         table.rows[row_idx].cells[cell_idx].text = cell_data['text']
-#
-#     doc.save(output_path)
-#     print(f"简化文档已保存到: {output_path}")
 
 
 # 使用示例
