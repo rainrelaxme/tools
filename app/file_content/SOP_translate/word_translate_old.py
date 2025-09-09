@@ -183,7 +183,7 @@ def translate_docx_with_bilingual_content(input_path: str, output_path: str, api
                 logger.info(f"[段落 {idx}/{len(paragraphs_to_translate)}] {original_text[:30]}...")
 
                 translated_text = translator.translate_text(original_text)
-                
+
                 # 在原文后添加英文翻译，用换行分隔
                 para.text = f"{original_text}\n{translated_text}"
 
@@ -211,7 +211,7 @@ def translate_docx_with_bilingual_content(input_path: str, output_path: str, api
                     f"[表格 {idx}/{len(tables_to_translate)}] 表{table_idx + 1}-行{row_idx + 1}-列{cell_idx + 1}: {original_text[:20]}...")
 
                 translated_text = translator.translate_text(original_text)
-                
+
                 # 在原文后添加英文翻译，用换行分隔
                 cell.text = f"{original_text}\n{translated_text}"
 
