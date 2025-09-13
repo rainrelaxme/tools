@@ -3,36 +3,10 @@
 # 说明：文件工具的中间过程及最终函数实现
 
 import os
-import xlsxwriter  # 只能写入xlsx，如果要写入xls要用xlwt
-from openpyxl import Workbook
+import xlsxwriter   # 只能写入xlsx，如果要写入xls要用xlwt
 
-from office_tools import file_edit
-from office_tools import excel_edit
-
-
-def get_filelist(folder_path, output_path=os.path.join(os.path.expanduser('~'), 'Downloads'), mode=0):
-    """获取文件夹下的文件清单，输出到excel，序号、文件名、大小、后缀名,
-        output_path:输出文件夹默认，默认“下载”。
-        mode: 0:不返回下层文件夹，1：返回下层文件夹
-    """
-    if mode == 0:
-        # 创建一个新的工作簿和工作表
-        wb = Workbook()
-        ws = wb.active
-        ws.title = "File Names"
-
-        # 写入表头
-        ws['A1'] = "File Name"
-
-        # 遍历文件夹中的所有文件
-        for idx, filename in enumerate(os.listdir(folder_path), start=2):
-            # 只处理文件，忽略子文件夹
-            if os.path.isfile(os.path.join(folder_path, filename)):
-                ws[f'A{idx}'] = filename
-
-        # 保存Excel文件
-        wb.save(output_path)
-        print(f"File names have been saved to {output_path}")
+from app.office import excel_edit
+from app.file import file_edit
 
 
 def rename_add_space(path):
@@ -133,7 +107,7 @@ def excel_merge(files: tuple):
         f_open = excel_edit.open_xls(file)
         sh_num = excel_edit.get_sheet_num(f_open)
         for sheet in range(sh_num):
-            print("正在读取文件：" + str(file) + "的第" + str(sheet + 1) + "个sheet表的内容...")
+            print("正在读取文件：" + str(file) + "的第" + str(sheet+1) + "个sheet表的内容...")
             sheet_value = excel_edit.get_file(file, sheet)
             if sheet_value:
                 if value:
@@ -141,7 +115,7 @@ def excel_merge(files: tuple):
                     if sheet_value[0] != value[0]:
                         return "Error：表头不同，无法合并"
                     else:
-                        for row in sheet_value[1:len(sheet_value) - 1]:
+                        for row in sheet_value[1:len(sheet_value)-1]:
                             value.append(row)
                 else:
                     for row in sheet_value:
@@ -156,7 +130,7 @@ def excel_merge(files: tuple):
     for row in range(len(value)):
         for col in range(len(value[row])):
             cell = value[row][col]
-            work_sheet.write(row, col, cell)  # 向行列对应的单元格写入内容
+            work_sheet.write(row, col, cell)    # 向行列对应的单元格写入内容
     work_file.close()
     print("ok")
 
@@ -188,13 +162,6 @@ def is_exist(filename, path, mode=0):
     else:
         return 1
 
-
-# all_file = ('E:/project/pythonProject/Little_tools/src/1.xlsx', 'E:/project/pythonProject/Little_tools/src/2.xlsx')
-# all_file = ('E:/project/pythonProject/Little_tools/src/3.xlsx')
+# all_file = ('E:/project/pythonProject/Little_tools/file/1.xlsx', 'E:/project/pythonProject/Little_tools/file/2.xlsx')
+# # # all_file = ('E:/project/pythonProject/Little_tools/file/3.xlsx')
 # excel_merge(all_file)
-
-def test():
-    get_filelist(r'C:\Users\shawn\Desktop\languages',r"D:\新建文件夹")
-
-
-test()

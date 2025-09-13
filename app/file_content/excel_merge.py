@@ -1,3 +1,17 @@
+#!/usr/bin/env python3
+# -*- coding:utf-8 -*-
+"""
+@Project: distance.py
+@File   : excel_merge.py
+@Version:
+@Author : RainRelaxMe
+@Date   : 2025/9/1 22:16
+@Info   : 将多份Excel文件合并成同一个Excel文件
+"""
+
+import glob
+from numpy import *
+
 # 下面这些变量需要您根据自己的具体情况选择
 biaotou = ['学号', '学生姓名', '第一志愿', '第二志愿', '第三志愿', '第四志愿', '第五志愿', '联系电话', '性别', '备注']
 # 在哪里搜索多个表格
@@ -8,10 +22,7 @@ fileform = "xls"
 filedestination = "C:\\Users\\shawn\\Downloads"
 # 合并后的表格命名为file
 file = "test"
-
 # 首先查找默认文件夹下有多少文档需要整合
-import glob
-from numpy import *
 
 filearray = []
 for filename in glob.glob(filelocation + "*." + fileform):
