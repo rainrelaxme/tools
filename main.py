@@ -4,6 +4,7 @@
 
 from app.office import excel_edit as ee
 from app.file import file_edit as fe, file_function as ff
+from app.file_content.word_translate.translate_docx_deepseek import translate_docx_bilingual
 
 if __name__ == '__main__':
     print('请选择工具（输入序号，Enter确认，输入q退出）：\n'
@@ -14,6 +15,7 @@ if __name__ == '__main__':
           '5.文件夹下的文件增加自定义字符\n'
           '6.文件夹下的文件去除自定义字符\n'
           '7.文件夹下的Excel合并\n'
+          '8.翻译Word为双语（原文后追加英文）\n'
           )
 
     while True:
@@ -65,5 +67,20 @@ if __name__ == '__main__':
             files = ee.choose_file(is_single=1)
             ff.excel_merge(files)
             print("已完成，请前往查看结果。")
+        elif tool_choose == "8":
+            in_path = input("请输入待翻译的Word路径（.docx）：")
+            if in_path == "q":
+                break
+            out_path = input("请输入输出路径（.docx，回车使用默认同目录 *_bilingual.docx）：")
+            if out_path.strip() == "":
+                if in_path.lower().endswith('.docx'):
+                    out_path = in_path[:-5] + "_bilingual.docx"
+                else:
+                    out_path = in_path + "_bilingual.docx"
+            try:
+                translate_docx_bilingual(in_path, out_path)
+                print("已完成，请前往查看结果。")
+            except Exception as e:
+                print(f"执行失败：{e}")
         else:
             print('选择错误，请重新选择！')
