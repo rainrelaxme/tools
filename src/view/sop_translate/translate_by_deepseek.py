@@ -1,21 +1,15 @@
-from docx import Document
-import requests
-import json
-import time
-import os
-from typing import List, Dict, Any
-import re
-import logging
 
 from openai import OpenAI
+
+from config.private import API_KEY
 
 
 class Translator:
     def __init__(self):
-        self.api_key = "sk-a950c7b878a940be93136750a9a47860"
+        self.api_key = API_KEY
         self.base_url = "https://api.deepseek.com"
 
-    def translate(self, text: str, language) -> str:
+    def translate(self, text: str, language, display=False) -> str:
         # 构建DeepSeek请求
         client = OpenAI(api_key=self.api_key, base_url=self.base_url)
 
@@ -23,8 +17,7 @@ class Translator:
             {"role": "system",
              "content": f"你是一名工业领域翻译工作者，请进行{language}翻译，保持专业术语的准确性,只需返回翻译后的文本，不要添加任何额外的解释或注释。"
                         f"待翻译内容如下：{text}"
-             }
-        ]
+             }]
 
         response = client.chat.completions.create(
             model="deepseek-chat",
@@ -33,7 +26,8 @@ class Translator:
             stream=False,  # 非流式输出
         )
         resp_text = response.choices[0].message.content
-        print(text, "-->", resp_text)
+        if display:
+            print(text, "-->", resp_text)
         return resp_text
 
 

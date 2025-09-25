@@ -2,7 +2,6 @@ import datetime
 from docx import Document
 from docx.shared import Pt, Inches, Cm
 from docx.oxml.ns import qn
-from SOP_translate_cursor import create_new_document as CND
 
 # 1.记录合并单元格的位置
 # 2.应用合并单元格的位置

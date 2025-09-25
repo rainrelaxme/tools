@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 """
 @Project: tools.py
-@File   : SOP_translate.py
+@File   : sop_translate.py
 @Version:
 @Author : RainRelaxMe
 @Date   : 2025/9/24 02:00
@@ -17,10 +17,11 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_BREAK
 from docx.oxml.ns import qn
 import datetime
 import os
-import re
 import getpass
+from win32com import client as wc
 
-from app.file_content.SOP_translate.translate_by_deepseek import Translator
+from src.view.sop_translate.translate_by_deepseek import Translator
+from config.config import VALID_ACCOUNTS
 
 
 def get_content(input_path):
@@ -429,7 +430,8 @@ def add_translation_paragraph(original_data, translator, language):
                 for lang in language:
                     new_item = item.copy()
 
-                    translated_text = translator.translate(original_text, language=lang)
+                    # translated_text = translator.translate(original_text, language=lang, display=True)
+                    translated_text = original_text
                     new_item['text'] = translated_text
                     new_item['language'] = lang
 
@@ -461,7 +463,8 @@ def add_translation_table(original_data, translator, language):
                             for lang in language:
                                 new_para = para.copy()
 
-                                translated_text = translator.translate(original_text, language=lang)
+                                # translated_text = translator.translate(original_text, language=lang, display=True)
+                                translated_text = original_text
                                 new_para['text'] = translated_text
                                 new_para['language'] = lang
 
@@ -477,12 +480,31 @@ def add_translation_table(original_data, translator, language):
     return new_data
 
 
-# 预设的账号密码（在实际应用中应该使用更安全的方式存储）
-VALID_ACCOUNTS = {
-    "admin": "admin123",
-    "user": "user123",
-    "translator": "cmtech.20250924"
-}
+def doc_to_docx(doc_path, docx_path=None):
+    """
+    将doc文件转换为docx格式
+    """
+    # 如果未指定输出路径，自动生成
+    if docx_path is None:
+        docx_path = doc_path.replace('.doc', '.docx')
+
+    # 启动Word应用程序
+    word = wc.Dispatch('Word.Application')
+    word.Visible = False  # 不显示Word界面
+
+    try:
+        # 打开doc文档
+        doc = word.Documents.Open(doc_path)
+        # 另存为docx格式
+        doc.SaveAs(docx_path, FileFormat=16)  # 16表示docx格式
+        doc.Close()
+        print(f"转换成功: {doc_path} -> {docx_path}")
+        return docx_path
+    except Exception as e:
+        print(f"转换失败: {e}")
+        return False
+    finally:
+        word.Quit()
 
 
 def login():
@@ -491,12 +513,7 @@ def login():
     attempts = 0
 
     while attempts < max_attempts:
-        print("\n" + "=" * 50)
-        print("          文档翻译系统 - 登录验证")
-        print("=" * 50)
-
         username = input("请输入用户名: ").strip()
-        print("123")
         password = getpass.getpass("请输入密码: ").strip()
 
         # 验证账号密码
@@ -529,59 +546,25 @@ def check_license():
 
 
 if __name__ == "__main__":
-    # 首先进行登录验证
-    # if not login():
-    #     exit()
-
-    # 可选：进行许可证检查
-    if not check_license():
-        exit()
-
     # 获取当前时间戳
     current_time = datetime.datetime.now().strftime('%y%m%d%H%M%S')
+    language = ['英文', '越南语']
+
+    input_file = r"D:\Code\Project\tools\data\test.docx"
+    output_folder = r"D:\Code\Project\tools\data\temp"
+    file_base_name = os.path.splitext(input_file)[0]  # 去掉扩展名
+    output_file = input_file.replace('.docx', '_translate_{current_time}.docx')
+
+    translator = Translator()
     print(f"********************start at {current_time}********************")
-    try:
-        # 设置输入文件夹路径
-        input_folder = input("请输入待翻译的文件目录：\n")
+    # 1. 读取原文档内容
+    content_data = get_content(input_file)
 
-        # 设置输出文件夹路径（二级文件夹）
-        output_folder = os.path.join(input_folder, "translate_output")
+    # 2. 翻译
+    after_para = add_translation_paragraph(content_data, translator, language)
+    after_table = add_translation_table(after_para, translator, language)
 
-        # 创建输出文件夹（如果不存在）
-        os.makedirs(output_folder, exist_ok=True)
-
-        # 初始化翻译器
-        translator = Translator()
-        language = ['英文', '越南语']
-
-        # 遍历文件夹中的所有文件
-        for filename in os.listdir(input_folder):
-            # 检查文件是否为Word文档（.docx格式）
-            if filename.endswith('.docx') and not filename.startswith('~$'):  # 忽略临时文件
-                input_file = os.path.join(input_folder, filename)
-
-                # 生成输出文件名（原文件名+时间）
-                file_base_name = os.path.splitext(filename)[0]  # 去掉扩展名
-                output_filename = f"{file_base_name}_translate_{current_time}.docx"
-                output_file = os.path.join(output_folder, output_filename)
-
-                print(f"正在处理文件: {filename}")
-
-                # 1. 读取原文档内容及格式
-                content_data = get_content(input_file)
-                # print(f"  总共提取了 {len(content_data)} 个内容块")
-
-                # 2. 翻译
-                after_para = add_translation_paragraph(content_data, translator, language)
-                after_table = add_translation_table(after_para, translator, language)
-
-                # 3. 创建新文档
-                create_new_document(after_table, output_file)
-                print(f"  已完成翻译: {output_filename}")
-
-        print(f"所有文件处理完成！输出目录: {output_folder}")
-
-    except Exception as e:
-        print(f"处理过程中出现错误: {e}")
+    # 3. 创建新文档
+    create_new_document(after_table, output_file)
 
     print(f"********************end********************")
