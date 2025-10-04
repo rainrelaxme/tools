@@ -2,13 +2,15 @@
 # -*- coding: utf-8 -*-
 """
 @Project : tools
-@File    : main.py
+@File    : run.py
 @Author  : Shawn
 @Date    : 2025/9/24 11:53
 @Info    : Description of this file
 """
 
-from src import run
+def hello_world():
+    print("hello world")
+
 
 if __name__ == '__main__':
-    run.hello_world()
+    hello_world()

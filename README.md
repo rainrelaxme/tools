@@ -1,9 +1,68 @@
-# little_tools
-some tools
-1. 文件工具
-   1. 获取文件夹下的文件清单，存到Excel。
-   2. Excel文件合并。
-   3. 文件名称调整。
-2. 图片工具
-   1. GIF动图反转顺序
-   2. 生存条形码
+Tools
+===============
+当前最新版本： 0.9
+
+[![AUR](https://img.shields.io/badge/license-Apache%20License%202.0-blue.svg)](https://github.com/zhangdaiscott/jeecg-boot/blob/master/LICENSE)
+
+
+## 简介
+一些小工具
+
+## 安装与使用
+
+ > 环境要求: 版本要求python 3.12.11。
+
+- Get the project code
+
+```bash
+git clone https://github.com/rainrelaxme/tools.git
+```
+
+- Installation dependencies
+
+```bash
+cd tools
+
+conda activate General  # conda环境
+
+pip install -r requirements.txt # 安装包
+```
+-  Create package
+
+```bash
+pyinstaller your_script.py
+
+# 设置输出目录为指定路径
+pyinstaller --distpath D:/output/folder your_script.py
+
+# 示例：将输出设置到其他磁盘
+pyinstaller --distpath E:/build/dist your_script.py
+
+# 同时设置构建临时文件路径
+pyinstaller --distpath D:/dist --workpath D:/build your_script.py
+```
+
+## 功能清单
+
+ > * MPLM模具清单导入
+ > * Excel压缩体积：压缩其中的图片
+ > * 
+
+
+## 项目结构
+
+```
+├─main
+├─app
+│  ├─database
+│  ├─file
+│  ├─file_content
+│  ├─picture
+│  └─others
+├─file
+|  └─temp 
+└─logs
+   
+```
+
+
