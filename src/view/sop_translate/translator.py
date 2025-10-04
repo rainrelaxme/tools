@@ -67,9 +67,9 @@ def docx_translate(language):
 
 
 if __name__ == '__main__':
-    language = ['英文', '越南语']
+
     print("\n" + "=" * 100)
-    print("\x20" * 32 + f"文档翻译系统 (中文-->{language})")
+    print("\x20" * 45 + f"文档翻译系统")
     print("=" * 100)
 
     # 首先进行登录验证
@@ -81,11 +81,24 @@ if __name__ == '__main__':
         exit()
 
     try:
+        print("注意：仅支持运行于windows系统！！！")
+        print("请选择目标语言（可多选，用\",\"分隔）：\n"
+              "1. 英语\n"
+              "2. 越南语")
+        lang_input = input().strip()
+        lang_list = lang_input.split(',')
+        language = []
+        for lang in lang_list:
+            if lang.strip() == '1':
+                language.append('英语')
+            if lang.strip() == '2':
+                language.append('越南语')
+        print(f"您选择的目标语言为{language}")
+
         print("请选择使用方式：\n"
               "1. 文本翻译\n"
               "2. 文档翻译")
         option = input().strip()
-
         if option == '1':
             text_translate(language)
         elif option == '2':

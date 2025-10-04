@@ -1,51 +1,56 @@
+import datetime
 import os
-from win32com import client as wc
+
+from docx import Document
+from docx.enum.text import WD_TAB_ALIGNMENT
+from docx.shared import Inches
 
 
-def doc_to_docx(doc_path, docx_path=None):
-    """
-    将doc文件转换为docx格式
+def set_custom_tab_stops():
+    doc = Document()
+    paragraph = doc.add_paragraph()
 
-    Args:
-        doc_path: 输入的doc文件路径
-        docx_path: 输出的docx文件路径，默认为None（自动生成）
-    """
-    # 如果未指定输出路径，自动生成
-    if docx_path is None:
-        docx_path = doc_path.replace('.doc', '.docx')
+    # 清除默认制表位
+    paragraph.paragraph_format.tab_stops.clear_all()
 
-    # 启动Word应用程序
-    word = wc.Dispatch('Word.Application')
-    word.Visible = False  # 不显示Word界面
+    # 添加自定义制表位
+    # 在2英寸处添加左对齐制表位
+    tab_stop1 = paragraph.paragraph_format.tab_stops.add_tab_stop(
+        Inches(1.7),
+        WD_TAB_ALIGNMENT.LEFT
+    )
 
-    try:
-        # 打开doc文档
-        doc = word.Documents.Open(doc_path)
-        # 另存为docx格式
-        doc.SaveAs(docx_path, FileFormat=16)  # 16表示docx格式
-        doc.Close()
-        print(f"转换成功: {doc_path} -> {docx_path}")
-        return True
-    except Exception as e:
-        print(f"转换失败: {e}")
-        return False
-    finally:
-        word.Quit()
+    # 在4英寸处添加居中对齐制表位
+    tab_stop2 = paragraph.paragraph_format.tab_stops.add_tab_stop(
+        Inches(3.5),
+        WD_TAB_ALIGNMENT.LEFT
+    )
+
+    # 在6英寸处添加右对齐制表位
+    tab_stop3 = paragraph.paragraph_format.tab_stops.add_tab_stop(
+        Inches(6.0),
+        WD_TAB_ALIGNMENT.LEFT
+    )
+
+    # 使用制表位
+    paragraph.add_run("\t")  # 制表符1
+    paragraph.add_run("文件编号：")
+    paragraph.add_run("\t")  # 制表符2
+    paragraph.add_run("C2GM-013-000")
+    # paragraph.add_run("\t")  # 跳到4英寸处
+    # paragraph.add_run("居中文字")
+    # paragraph.add_run("\t")  # 跳到6英寸处
+    # paragraph.add_run("右对齐文字")
+
+    return doc
 
 
-# 使用示例
-old_doc = r'D:\Code\Project\tools\data\input\1.C2LG-001-000-A08 供应商管理程序.doc'
-new_doc = r'D:\Code\Project\tools\data\input\translate_output\1.docx'
-doc_to_docx(old_doc, new_doc)
+if __name__ == '__main__':
+    doc = set_custom_tab_stops()
+    output_folder = r"D:\Code\Project\tools\data\temp"
+    current_time = datetime.datetime.now().strftime('%y%m%d%H%M%S')
 
+    file_base_name = 'test2.docx'
+    output_file = output_folder + "/" + file_base_name.replace(".docx", f"_translate_{current_time}.docx")
 
-# 批量转换示例
-def batch_convert(folder_path):
-    """批量转换文件夹中的所有doc文件"""
-    for filename in os.listdir(folder_path):
-        if filename.endswith('.doc'):
-            doc_path = os.path.join(folder_path, filename)
-            doc_to_docx(doc_path)
-
-# 批量转换
-# batch_convert('./doc_files/')
+    doc.save(output_file)
