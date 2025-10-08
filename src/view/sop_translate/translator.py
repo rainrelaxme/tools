@@ -11,7 +11,7 @@
 import datetime
 import os
 
-from sop_translate import login, check_license, get_content, add_translation_paragraph, add_translation_table, \
+from sop_translate import login, check_license, get_content, add_paragraph_translation, add_table_translation, \
     create_new_document, doc_to_docx
 from translate_by_deepseek import Translator
 
@@ -56,8 +56,8 @@ def docx_translate(language):
             content_data = get_content(input_file)
 
             # 2. 翻译
-            after_para = add_translation_paragraph(content_data, translator, language)
-            after_table = add_translation_table(after_para, translator, language)
+            after_para = add_paragraph_translation(content_data, translator, language)
+            after_table = add_table_translation(after_para, translator, language)
 
             # 3. 创建新文档
             create_new_document(after_table, output_file)

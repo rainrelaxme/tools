@@ -47,7 +47,7 @@ def set_custom_tab_stops():
 
 if __name__ == '__main__':
     doc = set_custom_tab_stops()
-    output_folder = r"D:\Code\Project\tools\data\temp"
+    output_folder = r"F:\Code\Project\tools\data\temp"
     current_time = datetime.datetime.now().strftime('%y%m%d%H%M%S')
 
     file_base_name = 'test2.docx'

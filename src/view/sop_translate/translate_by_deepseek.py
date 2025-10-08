@@ -1,3 +1,4 @@
+import json
 
 from openai import OpenAI
 
@@ -10,6 +11,11 @@ class Translator:
         self.base_url = "https://api.deepseek.com"
 
     def translate(self, text: str, language, display=False) -> str:
+        # 先过滤是否在词库中
+        glossary_res = self.translate_filter(text, language)
+        if glossary_res:
+            return glossary_res
+
         # 构建DeepSeek请求
         client = OpenAI(api_key=self.api_key, base_url=self.base_url)
 
@@ -30,6 +36,25 @@ class Translator:
             print(text, "-->", resp_text)
         return resp_text
 
+    def translate_filter(self, text: str, language) -> str:
+        """
+        如果是指定的专有名词，在词库中的，则不再提交deepseek翻译。
+        """
+        glossary_folder = r"F:\Code\Project\tools\config"
+        if language == "英语":
+            glossary = glossary_folder + "/" + "glossary_en.json"
+        elif language == "越南语":
+            glossary = glossary_folder + "/" + "glossary_vi.json"
+        else:
+            print("词库不存在")
+
+        with open(glossary, "r", encoding="utf-8") as f:
+            glossary = json.load(f)
+
+        text_lite = text.replace(" ", "")
+        if text_lite in glossary:
+            res = glossary[text_lite]
+            return res
 
 # 使用示例
 # if __name__ == "__main__":
@@ -42,3 +67,8 @@ class Translator:
 #         translator.translate(text, language="英文")
 #     except Exception as e:
 #         print(f"翻译过程发生严重错误: {e}")
+
+# if __name__ == "__main__":
+#     translator = Translator()
+#     translated_text = translator.translate_filter("文件编号", "英语")
+#     print(translated_text)

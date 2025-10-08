@@ -20,12 +20,12 @@ import os
 import getpass
 from win32com import client as wc
 
-from src.view.sop_translate.template import apply_cover_template
+from src.view.sop_translate.template import apply_cover_template, apply_header_template
 from src.view.sop_translate.translate_by_deepseek import Translator
 from config.config import VALID_ACCOUNTS
 
 
-class GetDocContent:
+class DocContent:
     def __init__(self):
         self.title = ''
 
@@ -98,29 +98,7 @@ class GetDocContent:
                 }
                 data.append(table_data)
 
-        # 标记标题
-        title = self.get_flag_title(data)
-
         return data
-
-    def get_flag_title(self, content_data):
-        """
-        标记文件大标题：第一个非空内容，表格、段落都可以。
-        """
-        # 若是标题是用表格做的，还要处理
-        title_text = ''
-        for index, item in enumerate(content_data):
-            if item['type'] == 'paragraph' and item['text'].strip():
-                content_data[index]['flag'] = 'top_title'
-                title_text = item['text'].strip()
-                break
-            if item['type'] == 'table' and (len(item['rows']) == 1 and item['cols'] == 1):
-                # item['rows'][0]['cells'][0]['text']
-                content_data[index]['flag'] = 'top_title'
-                title_text = item['rows'][0]['cells'][0]['text'].strip()
-                break
-
-        return title_text
 
     def get_cover_content(self, content_data):
         """获取word中封面的内容：修订记录表格之前内容算作封面"""
@@ -216,6 +194,41 @@ class GetDocContent:
 
         return rows
 
+    def flag_title(self, content_data):
+        """
+        标记文件大标题：第一个非空内容，表格、段落都可以。
+        """
+        # 若是标题是用表格做的，还要处理
+        title_text = ''
+        for index, item in enumerate(content_data):
+            if item['type'] == 'paragraph' and item['text'].strip():
+                content_data[index]['flag'] = 'top_title'
+                title_text = item['text'].strip()
+                break
+            if item['type'] == 'table' and (len(item['rows']) == 1 and item['cols'] == 1):
+                # item['rows'][0]['cells'][0]['text']
+                content_data[index]['flag'] = 'top_title'
+                title_text = item['rows'][0]['cells'][0]['text'].strip()
+                break
+
+    def flag_header(self, content_data):
+        """
+        标记文档的头信息，如文件编号、版本、制定部门、制定日期、总页次。
+        """
+        # 找到文件头信息的位置，从标题后第一个有内容的段落
+        # 先只考虑大标题是段落的形式
+        for index, item in enumerate(content_data):
+            if item['flag'] == 'top_title':
+                title_end_index = index
+            if item['type'] == 'table':
+                header_end_index = index
+        cut_title_data = content_data[title_end_index+1:header_end_index]
+
+        for index, item in enumerate(cut_title_data):
+            if item['type'] == 'paragraph' and item['text'].strip():
+                cut_title_data[index]['flag'] = 'header'
+
+
 
 def set_paper_size(doc):
     """
@@ -245,18 +258,22 @@ def create_new_document(content_data, output_path, translations=None):
     doc = Document()
     set_paper_size(doc)
 
-    for item in content_data:
+    for index, item in enumerate(content_data['content_data']):
         if item['type'] == 'paragraph':
             # 创建新段落
             paragraph = doc.add_paragraph()
 
-            # 应用段落格式
-            apply_paragraph_format(paragraph, item['para_format'])
+            # 应用文件头信息格式
+            if item['flag'] == 'header':
+                apply_header_template(paragraph, item)
+            else:
+                # 应用段落格式
+                apply_paragraph_format(paragraph, item['para_format'])
 
-            # 应用运行文本、格式
-            for run_data in item['runs']:
-                run = paragraph.add_run(run_data['text'])
-                apply_run_format(run, run_data)
+                # 应用运行文本、格式
+                for run_data in item['runs']:
+                    run = paragraph.add_run(run_data['text'])
+                    apply_run_format(run, run_data)
 
         elif item['type'] == 'table':
             # 创建表格
@@ -299,9 +316,6 @@ def create_new_document(content_data, output_path, translations=None):
     # 保存文档
     doc.save(output_path)
     print(f"新文档已保存到: {output_path}")
-
-
-
 
 
 def apply_paragraph_format(paragraph, format_info):
@@ -411,7 +425,7 @@ def apply_table_format(table, table_format_info):
     #     table.autofit = True
 
 
-def add_translation_paragraph(original_data, translator, language):
+def add_paragraph_translation(original_data, translator, language):
     """添加翻译段落"""
     new_data = []
 
@@ -440,7 +454,7 @@ def add_translation_paragraph(original_data, translator, language):
     return new_data
 
 
-def add_translation_table(original_data, translator, language):
+def add_table_translation(original_data, translator, language):
     new_data = original_data.copy()
     for item in new_data:
         if item['type'] == 'table':
@@ -476,26 +490,30 @@ def add_translation_table(original_data, translator, language):
     return new_data
 
 
-def add_translation_cover(cover_data, translator, language):
+def add_cover_translation(cover_data, translator, language):
     """封面的'文件编号：C2GM-Z13-000'这种需要通过切分分号来分开翻译"""
+    # 获取封面内容
     for index, item in enumerate(cover_data):
         if item['flag'] == 'top_title':
-            title_end_index = index
-    # '文件编号'之前的正常翻译
-    cover_data_1 = cover_data[:title_end_index+1]
-    after_para_1 = add_translation_paragraph(cover_data_1, translator, language)
-    after_table_1 = add_translation_table(after_para_1, translator, language)
+            title_end_index = index+1
+        if item['flag'] == 'header':
+            header_end_index = index+1
 
-    # '文件编号'之后的
-    cover_data_2 = cover_data[title_end_index+1:]
-    print(cover_data_2)
-    new_data = []
+    # 1. '文件编号'之前的正常翻译
+    cover_data_1 = cover_data[:title_end_index]
+    after_para_1 = add_paragraph_translation(cover_data_1, translator, language)
+    after_table_1 = add_table_translation(after_para_1, translator, language)
+
+    # 2. 文件头信息内容：文件编号之后到审批表格前
+    cover_data_2 = cover_data[title_end_index:header_end_index]
+    translated_cover_data_2 = []
     for item in cover_data_2:
-        new_data.append(item)
-        if item['type'] == 'paragraph':
+        translated_cover_data_2.append(item)
+        if item['type'] == 'paragraph' and item['flag'] == 'header':
             original_text = item['text']
 
             # 根据冒号拆分段落
+            split_text = []
             if ":" in original_text:
                 split_text = original_text.split(":", 1)    # 1代表只分割第一个冒号
             elif "：" in original_text:
@@ -504,17 +522,38 @@ def add_translation_cover(cover_data, translator, language):
             if split_text:
                 for lang in language:
                     new_item = item.copy()
+
                     translated_text = ''
                     for part in split_text:
                         part_translated = translator.translate(part, language=lang, display=True)
                         translated_text = translated_text + part_translated + '：'
+                    translated_text = translated_text[:-1]
+                    # print(translated_text)
+                    new_item['text'] = translated_text
+                    new_item['language'] = lang
 
-            # 用制表符对齐
+                    # 更改run里面内容
+                    new_run = item['runs'][0].copy()
+                    new_run['text'] = translated_text
+                    new_runs = [new_run]
+                    new_item['runs'] = new_runs
+                    translated_cover_data_2.append(new_item)
 
+    # 3. 审批表格翻译
+    cover_data_3 = cover_data[header_end_index:]
+    after_para_3 = add_paragraph_translation(cover_data_3, translator, language)
+    after_table_3 = add_table_translation(after_para_3, translator, language)
 
+    # 4. 汇总
+    new_cover_data = []
+    for item in after_table_1:
+        new_cover_data.append(item)
+    for item in translated_cover_data_2:
+        new_cover_data.append(item)
+    for item in after_table_3:
+        new_cover_data.append(item)
 
-
-
+    return new_cover_data
 
 
 def doc_to_docx(doc_path, docx_path=None):
@@ -589,33 +628,47 @@ if __name__ == "__main__":
 
     # input_file = r"D:\Code\Project\tools\data\test2.docx"
     # input_file = r"D:\Code\Project\tools\data\1.C2LG-001-000-A08 供应商管理程序.docx"
-    input_file = r"D:\Code\Project\tools\data\13.C2GM-Z13-000-A00 管理评审程序.docx"
+    # input_file = r"D:\Code\Project\tools\data\13.C2GM-Z13-000-A00 管理评审程序.docx"
+    # input_file = r"F:\Code\Project\tools\data\13.C2GM-Z13-000-A00 管理评审程序.docx"
+    input_file = r"F:\Code\Project\tools\data\1.C2LG-001-000-A08 供应商管理程序.docx"
 
-    output_folder = r"D:\Code\Project\tools\data\temp"
+    # output_folder = r"D:\Code\Project\tools\data\temp"
+    output_folder = r"F:\Code\Project\tools\data\temp"
+
     file_base_name = os.path.basename(input_file)
     output_file = output_folder + "/" + file_base_name.replace(".docx", f"_translate_{current_time}.docx")
 
     translator = Translator()
     print(f"********************start at {current_time}********************")
     # 1. 读取原文档内容
-    new_doc = GetDocContent()
+    new_doc = DocContent()
     content_data = new_doc.get_content(input_file)
 
-    # 2. 封面单独翻译
+    # 2. 标注关键信息：大标题、头信息，同时修改content_data内容
+    new_doc.flag_title(content_data)
+    new_doc.flag_header(content_data)
+
+    # 3. 获取封面信息
     cover_data = new_doc.get_cover_content(content_data)
-    add_translation_cover(cover_data, translator, language)
 
+    # 4. 翻译
+    # ① 翻译封面
+    translated_cover_data = add_cover_translation(cover_data, translator, language)
+    # ② 翻译其它内容
+    body_data = content_data[len(cover_data):]
+    after_para = add_paragraph_translation(body_data, translator, language)
+    after_table = add_table_translation(after_para, translator, language)
+    # ③ 合并
+    translated_content_data = []
+    for item in translated_cover_data:
+        translated_content_data.append(item)
+    for item in after_table:
+        translated_content_data.append(item)
 
-    # 2. 翻译
-    # 先过翻译过滤器
-    after_para = add_translation_paragraph(content_data, translator, language)
-    after_table = add_translation_table(after_para, translator, language)
-    translated_cover_data = new_doc.get_cover_content(after_table)
+    # 5. 处理封面
+    formatted_content = apply_cover_template(translated_content_data, translated_cover_data)
 
-    # 3. 处理封面
-    formatted_content = apply_cover_template(after_table, translated_cover_data)
-
-    # 3. 创建新文档
+    # 6. 创建新文档
     create_new_document(formatted_content, output_file)
 
     print(f"********************end********************")
