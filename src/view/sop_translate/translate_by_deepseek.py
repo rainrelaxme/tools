@@ -40,7 +40,9 @@ class Translator:
         """
         如果是指定的专有名词，在词库中的，则不再提交deepseek翻译。
         """
-        glossary_folder = r"F:\Code\Project\tools\config"
+        # glossary_folder = r"F:\Code\Project\tools\config"
+        glossary_folder = r"D:\Code\Project\tools\config"
+
         if language == "英语":
             glossary = glossary_folder + "/" + "glossary_en.json"
         elif language == "越南语":

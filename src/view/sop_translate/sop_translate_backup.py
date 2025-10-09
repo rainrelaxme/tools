@@ -29,11 +29,12 @@ class DocContent:
     def __init__(self):
         self.title = ''
 
-    def get_content(self, doc):
+    def get_content(self, input_path):
         """
         读取word文件的内容，返回位置、内容、格式，记录在dataform中
         保持段落和表格在文档中的原始顺序
         """
+        doc = Document(input_path)
         data = []
 
         # 先处理所有段落，记录它们在文档中的位置
@@ -194,49 +195,6 @@ class DocContent:
             rows.append(row_data)
 
         return rows
-
-    def get_header_content(self, doc):
-        """
-        获取页眉内容
-        """
-        header_content = []
-        for index, section in enumerate(doc.sections):
-            header = section.header
-            if header:
-                content = self.get_content(header)
-                header_data = {
-                    'type': 'header',
-                    'index': index,
-                    'element_index': index,
-                    'flag': 'header',
-                    'content': content,
-                }
-                header_content.append(header_data)
-        print("********header***********", header_content)
-
-        return header_content
-
-    def get_footer_content(self, doc):
-        """
-        获取页脚内容
-        """
-        footer_content = []
-        for index, section in enumerate(doc.sections):
-            footer = section.footer
-            if footer:
-                content = self.get_content(footer)
-                footer_data = {
-                    'type': 'footer',
-                    'index': index,
-                    'element_index': index,
-                    'flag': 'footer',
-                    'content': content,
-                }
-                footer_content.append(footer_data)
-        print("********footer***********",footer_content)
-
-        return footer_content
-
 
     def flag_title(self, content_data):
         """
@@ -683,11 +641,9 @@ if __name__ == "__main__":
 
     # input_file = r"D:\Code\Project\tools\data\test2.docx"
     # input_file = r"D:\Code\Project\tools\data\1.C2LG-001-000-A08 供应商管理程序.docx"
-    # input_file = r"D:\Code\Project\tools\data\13.C2GM-Z13-000-A00 管理评审程序.docx"
+    input_file = r"D:\Code\Project\tools\data\13.C2GM-Z13-000-A00 管理评审程序.docx"
     # input_file = r"F:\Code\Project\tools\data\13.C2GM-Z13-000-A00 管理评审程序.docx"
     # input_file = r"F:\Code\Project\tools\data\1.C2LG-001-000-A08 供应商管理程序.docx"
-    input_file = r"D:\Code\Project\tools\data\13. 封面模板.docx"
-
 
     output_folder = r"D:\Code\Project\tools\data\temp"
     # output_folder = r"F:\Code\Project\tools\data\temp"
@@ -698,12 +654,8 @@ if __name__ == "__main__":
     translator = Translator()
     print(f"********************start at {current_time}********************")
     # 1. 读取原文档内容
-    doc = Document(input_file)
     new_doc = DocContent()
-    content_data = new_doc.get_content(doc)
-
-    # header_content = new_doc.get_header_content(doc)
-    # footer_content = new_doc.get_footer_content(doc)
+    content_data = new_doc.get_content(input_file)
 
     # 2. 标注关键信息：大标题、头信息，同时修改content_data内容
     new_doc.flag_title(content_data)

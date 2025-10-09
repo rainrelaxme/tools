@@ -1,143 +1,169 @@
-import datetime
 from docx import Document
-from docx.shared import Pt, Inches, Cm
-from docx.oxml.ns import qn
+import json
 
-# 1.记录合并单元格的位置
-# 2.应用合并单元格的位置
-# 3.创建文档
+def extract_header_footer_content(docx_path):
+    """
+    提取文档中所有页眉页脚的文本内容，返回结构化数据
+    """
+    doc = Document(docx_path)
 
-def get_merge_cells_info(table):
-    merged_cells = []
-
-    data = []
-    for table_index, table in enumerate(doc.tables):
-        data.append([])
-        for row_index, row in enumerate(table.rows):
-            data[-1].append([])
-            for col_index, cell in enumerate(row.cells):
-                data[-1][-1].append(cell)
-        print(data)
-
-
-def apply_merged_cells(table, merged_cells_info):
-    start_cell = table.rows[0].cells[0]
-    end_cell = table.rows[0].cells[2]
-    start_cell.merge(end_cell)
-
-    start_cell_vertical = table.rows[1].cells[0]
-    end_cell_vertical = table.rows[2].cells[1]
-    start_cell_vertical.merge(end_cell_vertical)
-
-
-def get_table_size(table):
-    cells = []
-    for row_index, row in enumerate(table.rows):
-        for col_index, cell in enumerate(row.cells):
-            # print(f"({row_index}, {col_index})")
-
-            cell_info = {
-                'row': row_index,
-                'col': col_index,
-                'width': cell.width,
-                'content': cell.text
-            }
-            cells.append(cell_info)
-    print(cells)
-
-
-def get_paper_size(doc):
-    section = doc.sections[0]
-    # 获取的尺寸说是twip，但是换算1cm=567twip，不对。
-    paper_size = {
-        'orientation': section.orientation,
-        'page_width': section.page_width,
-        'page_height': section.page_height,
-        'top_margin': section.top_margin,
-        'bottom_margin': section.bottom_margin,
-        'left_margin': section.left_margin,
-        'right_margin': section.right_margin,
+    result = {
+        'sections': [],
+        'all_headers': [],
+        'all_footers': []
     }
-    print("paper_size", paper_size)
 
-    return paper_size
+    for section_num, section in enumerate(doc.sections, 1):
+        section_data = {
+            'section_number': section_num,
+            'headers': {},
+            'footers': {}
+        }
 
+        # # 提取页眉
+        # header_types = [
+        #     ('default', section.header),
+        #     ('first_page', section.first_page_header),
+        #     ('even_page', section.even_page_header),
+        #     # ('odd_page', section.odd_page_header)
+        # ]
+        #
+        # for header_name, header in header_types:
+        #     if not header.is_linked_to_previous:
+        #         texts = [p.text.strip() for p in header.paragraphs if p.text.strip()]
+        #         if texts:
+        #             section_data['headers'][header_name] = texts
+        #             result['all_headers'].extend(texts)
 
-if __name__ == '__main__':
-    datetime = datetime.datetime.now().strftime('%y%m%d%H%M%S')
-    input_file = f"../../../file/test.docx"
-    output_file = f"../../../file/temp/outputxxx.docx"
-    doc = Document(input_file)
+        # 提取页脚
+        footer_types = [
+            ('default', section.footer),
+            ('first_page', section.first_page_footer),
+            ('even_page', section.even_page_footer),
+            # ('odd_page', section.odd_page_footer)
+        ]
 
-    get_paper_size(doc)
+        for footer_name, footer in footer_types:
+            if not footer.is_linked_to_previous:
+                texts = [p.text.strip() for p in footer.paragraphs if p.text.strip()]
+                if texts:
+                    section_data['footers'][footer_name] = texts
+                    result['all_footers'].extend(texts)
 
+        result['sections'].append(section_data)
 
-    # new_doc = Document()
-    #
-    # table = new_doc.add_table(rows=5, cols=3)
-    # table.style = 'Table Grid'
-    #
-    # table.cell(0,0).width = Inches(3.6)
-    # table.cell(0,1).width = Inches(2.5)
-    # table.cell(0,1).width = Inches(2.5)
-
-    # table.cell(1,0).merge(table.cell(1,1))
-    # table.cell(1, 0).width = Inches(3)
-
-    # new_doc.save(output_file)
-    # print(f"新文档已保存到: {output_file}")
-
-
-
-
-def set_ziti(doc):
-    para = doc.add_paragraph()
-
-    run = para.add_run('testn\n你好')
-    # run1 = para.add_run('你好，鲍老师')
-    # run2 = para.add_run('test text content.')
-
-    # run.font.name = 'Times New Roman'
-
-    run.font.name = 'Times New Roman'
-    run.element.rPr.rFonts.set(qn('w:eastAsia'), u'楷体')
-    run.font.size = Pt(36)
-
-    # run1.font.name = '宋体'
-    # run1.font.size = Pt(36)
-    #
-    # run2.font.name = '宋体'
-    # run2.font.size = Pt(12)
-
-    doc.save(output_file)
+    return result
 
 
-def doc_to_docx(doc_path, docx_path=None):
+# 使用示例
+file_path = r"D:\Code\Project\tools\data\13. 封面模板.docx"  # 替换为你的文件路径
+content = extract_header_footer_content(file_path)
+
+# print("提取到的页眉内容:")
+# for i, header in enumerate(set(content['all_headers']), 1):
+#     print(f"  {i}. {header}")
+
+print("\n提取到的页脚内容:")
+for i, footer in enumerate(set(content['all_footers']), 1):
+    print(f"  {i}. {footer}")
+
+# 打印详细结构
+print(f"\n详细结构:\n{json.dumps(content, indent=2, ensure_ascii=False)}")
+
+
+def get_header_content(doc):
     """
-    将doc文件转换为docx格式
-
-    Args:
-        doc_path: 输入的doc文件路径
-        docx_path: 输出的docx文件路径，默认为None（自动生成）
+    获取页眉内容
     """
-    # 如果未指定输出路径，自动生成
-    if docx_path is None:
-        docx_path = doc_path.replace('.doc', '.docx')
+    pass
 
-    # 启动Word应用程序
-    word = wc.Dispatch('Word.Application')
-    word.Visible = False  # 不显示Word界面
 
-    try:
-        # 打开doc文档
-        doc = word.Documents.Open(doc_path)
-        # 另存为docx格式
-        doc.SaveAs(docx_path, FileFormat=16)  # 16表示docx格式
-        doc.Close()
-        print(f"转换成功: {doc_path} -> {docx_path}")
-        return True
-    except Exception as e:
-        print(f"转换失败: {e}")
-        return False
-    finally:
-        word.Quit()
+def get_footer_content(doc):
+    """
+    获取页脚内容
+    """
+    footer_content = {
+        'type': 'paragraph',
+        'index': '',
+        'element_index': '',
+        'section': 'footer',
+        'flag': 'footer',
+        'text': '',
+        'para_format': '',
+        'runs': ''
+    }
+    for index, section in enumerate(doc.sections):
+        footer = section.footer
+        if footer:
+            footer_data = {
+                'type': 'footer',
+                'index': index,
+                'element_index': index,
+                'flag': 'footer',
+                'content': [],
+            }
+            # 先处理所有段落，记录它们在文档中的位置
+            para_positions = {}
+            for para_index, para in enumerate(doc.paragraphs):
+                # 获取段落在XML中的位置
+                para_xml = para._element
+                parent = para_xml.getparent()
+                if parent is not None:
+                    position = list(parent).index(para_xml)
+                    para_positions[(position, para.text)] = para_index
+
+            # 处理所有表格，记录它们在文档中的位置
+            table_positions = {}
+            for table_index, table in enumerate(doc.tables):
+                table_xml = table._element
+                parent = table_xml.getparent()
+                if parent is not None:
+                    position = list(parent).index(table_xml)
+                    table_positions[position] = table_index
+
+            # 按照文档顺序处理所有元素
+            all_elements = []
+
+            # 收集所有段落位置
+            for (pos, text), para_index in para_positions.items():
+                all_elements.append(('paragraph', pos, para_index, text))
+
+            # 收集所有表格位置
+            for pos, table_index in table_positions.items():
+                all_elements.append(('table', pos, table_index, None))
+
+            # 按位置排序
+            all_elements.sort(key=lambda x: x[1])
+
+            # 按排序后的顺序处理元素
+            for element_type, position, index, text in all_elements:
+                if element_type == 'paragraph':
+                    para = doc.paragraphs[index]
+                    para_data = {
+                        'type': 'paragraph',
+                        'index': position,
+                        'element_index': index,
+                        'section': 'body',
+                        'flag': '',
+                        'text': para.text,
+                        'para_format': self.get_paragraph_format(para),
+                        'runs': self.get_run_format(para)
+                    }
+                    data.append(para_data)
+
+                elif element_type == 'table':
+                    table = doc.tables[index]
+                    table_data = {
+                        'type': 'table',
+                        'index': position,
+                        'element_index': index,
+                        'section': 'body',
+                        'flag': '',
+                        'table_alignment': WD_TABLE_ALIGNMENT.CENTER,  # 表格居中，非内容居中
+                        'rows': self.get_table_content(table),
+                        'cols': len(table.columns),
+                    }
+                    data.append(table_data)
+
+
+

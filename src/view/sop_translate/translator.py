@@ -11,8 +11,11 @@
 import datetime
 import os
 
-from sop_translate import login, check_license, get_content, add_paragraph_translation, add_table_translation, \
-    create_new_document, doc_to_docx
+from docx import Document
+
+from sop_translate import login, check_license, DocContent, add_paragraph_translation, add_table_translation, \
+    create_new_document, doc_to_docx, add_cover_translation
+from src.view.sop_translate.template import apply_cover_template
 from translate_by_deepseek import Translator
 
 
@@ -53,14 +56,40 @@ def docx_translate(language):
             output_file = os.path.join(output_folder, output_filename)
 
             # 1. 读取原文档内容
-            content_data = get_content(input_file)
+            doc = Document(input_file)
+            new_doc = DocContent()
+            content_data = new_doc.get_content(doc)
 
-            # 2. 翻译
-            after_para = add_paragraph_translation(content_data, translator, language)
+            # header_content = new_doc.get_header_content(doc)
+            # footer_content = new_doc.get_footer_content(doc)
+
+            # 2. 标注关键信息：大标题、头信息，同时修改content_data内容
+            new_doc.flag_title(content_data)
+            new_doc.flag_preamble(content_data)
+            new_doc.flag_approveTable(content_data)
+
+            # 3. 获取封面信息
+            cover_data = new_doc.get_cover_content(content_data)
+
+            # 4. 翻译
+            # ① 翻译封面
+            translated_cover_data = add_cover_translation(cover_data, translator, language)
+            # ② 翻译其它内容
+            body_data = content_data[len(cover_data):]
+            after_para = add_paragraph_translation(body_data, translator, language)
             after_table = add_table_translation(after_para, translator, language)
+            # ③ 合并
+            translated_content_data = []
+            for item in translated_cover_data:
+                translated_content_data.append(item)
+            for item in after_table:
+                translated_content_data.append(item)
 
-            # 3. 创建新文档
-            create_new_document(after_table, output_file)
+            # 5. 处理内容
+            formatted_content = apply_cover_template(translated_content_data, translated_cover_data)
+
+            # 6. 创建新文档
+            create_new_document(formatted_content, output_file)
             print(f"  已完成翻译: {output_filename}")
 
     print(f"所有文件处理完成！输出目录: {output_folder}")

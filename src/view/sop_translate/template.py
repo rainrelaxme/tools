@@ -14,7 +14,7 @@ from docx import Document
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_TAB_ALIGNMENT, WD_LINE_SPACING
 from docx.oxml.ns import qn
-from docx.shared import Inches, Pt
+from docx.shared import Inches, Pt, Cm
 
 
 def apply_cover_template(content_data, cover_data):
@@ -114,7 +114,7 @@ def apply_cover_template(content_data, cover_data):
     para_index = 2
     i = 0
     for item in cover_data:
-        if item['flag'] == 'header':
+        if item['flag'] == 'preamble':
             item['index'] = index
             item['element_index'] = para_index
             new_cover_data.append(item)
@@ -138,6 +138,10 @@ def apply_cover_template(content_data, cover_data):
         if item['type'] == 'table':
             item['index'] = len(new_cover_data)+1
             item['element_index'] = 1
+            for row in item['rows']:
+                for cell in row['cells']:
+                    for para in cell['paragraphs']:
+                        para['para_format']['line_spacing'] = Pt(20)
             new_cover_data.append(item)
 
     # 6. 更新content_data
@@ -151,9 +155,9 @@ def apply_cover_template(content_data, cover_data):
     return res
 
 
-def apply_header_template(paragraph, header_data):
+def apply_preamble_format(paragraph, preamble_data):
     """
-    添加制表符
+    应用文件头信息格式，通过制表符对齐
     """
     # 清除默认制表位
     paragraph.paragraph_format.tab_stops.clear_all()
@@ -175,7 +179,7 @@ def apply_header_template(paragraph, header_data):
     )
 
     # 使用制表位
-    split_text = header_data['text'].split('：')
+    split_text = preamble_data['text'].split('：')
     paragraph.add_run("\t")  # 制表符1
     run1 = paragraph.add_run(split_text[0]+'：')
     run1.font.bold = True
@@ -187,6 +191,14 @@ def apply_header_template(paragraph, header_data):
     run2 = paragraph.add_run(split_text[1].strip())
     run2.font.size = Pt(16.0)
     run2.font.name = 'Times New Roman'
+
+
+def apply_approveTable_format(table):
+    """
+    应用审批表格格式
+    """
+    for i in range(len(table.rows)):
+        table.rows[i].height = Cm(2.5)
 
 
 if __name__ == '__main__':
@@ -212,7 +224,7 @@ if __name__ == '__main__':
             'type': 'paragraph',
             'index': 3,
             'element_index': 2,
-            'flag': 'header',
+            'flag': 'preamble',
             'text': '文件编号：C2GM-Z13-000',
             'para_format': {
                 'style': 'Normal',
@@ -265,7 +277,7 @@ if __name__ == '__main__':
             'type': 'paragraph',
             'index': 4,
             'element_index': 3,
-            'flag': 'header',
+            'flag': 'preamble',
             'text': 'Doc. No.：C2GM-Z13-000',
             'para_format': {
                 'style': 'Normal',
@@ -292,7 +304,7 @@ if __name__ == '__main__':
             'type': 'paragraph',
             'index': 5,
             'element_index': 4,
-            'flag': 'header',
+            'flag': 'preamble',
             'text': 'Văn bản số：C2GM-Z13-000',
             'para_format': {
                 'style': 'Normal',
@@ -335,7 +347,7 @@ if __name__ == '__main__':
             'type': 'paragraph',
             'index': 7,
             'element_index': 6,
-            'flag': 'header',
+            'flag': 'preamble',
             'text': '版    本：      A00',
             'para_format': {
                 'style': 'Normal',
@@ -424,7 +436,7 @@ if __name__ == '__main__':
             'type': 'paragraph',
             'index': 8,
             'element_index': 7,
-            'flag': 'header',
+            'flag': 'preamble',
             'text': 'Version：A00',
             'para_format': {
                 'style': 'Normal',
@@ -451,7 +463,7 @@ if __name__ == '__main__':
             'type': 'paragraph',
             'index': 9,
             'element_index': 8,
-            'flag': 'header',
+            'flag': 'preamble',
             'text': 'Ấn bản：A00',
             'para_format': {
                 'style': 'Normal',
@@ -483,7 +495,7 @@ if __name__ == '__main__':
             paragraph = doc.add_paragraph()
 
             # 应用文件头信息格式
-            if item['flag'] == 'header':
-                apply_header_template(paragraph, item)
+            if item['flag'] == 'preamble':
+                apply_preamble_format(paragraph, item)
 
     doc.save("test.docx")
