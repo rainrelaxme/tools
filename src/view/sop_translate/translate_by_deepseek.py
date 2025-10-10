@@ -1,8 +1,10 @@
 import json
+import os
 
 from openai import OpenAI
 
 from config.private import API_KEY
+from config.config import GLOSSARY
 
 
 class Translator:
@@ -10,7 +12,7 @@ class Translator:
         self.api_key = API_KEY
         self.base_url = "https://api.deepseek.com"
 
-    def translate(self, text: str, language, display=False) -> str:
+    def translate(self, text: str, language, display=False):
         # 先过滤是否在词库中
         glossary_res = self.translate_filter(text, language)
         if glossary_res:
@@ -36,27 +38,39 @@ class Translator:
             print(text, "-->", resp_text)
         return resp_text
 
-    def translate_filter(self, text: str, language) -> str:
+    def translate_filter(self, text: str, language):
         """
         如果是指定的专有名词，在词库中的，则不再提交deepseek翻译。
         """
-        # glossary_folder = r"F:\Code\Project\tools\config"
-        glossary_folder = r"D:\Code\Project\tools\config"
+        try:
+            # glossary_folder = r"D:\Code\Project\tools\config"
+            glossary_folder = GLOSSARY['dir']
+            if not os.path.isdir(glossary_folder):
+                print(f"词库路径不存在，请检查{glossary_folder}")
+                return False
 
-        if language == "英语":
-            glossary = glossary_folder + "/" + "glossary_en.json"
-        elif language == "越南语":
-            glossary = glossary_folder + "/" + "glossary_vi.json"
-        else:
-            print("词库不存在")
+            if language in GLOSSARY['languages']:
+                glossary = os.path.join(glossary_folder, GLOSSARY['languages'][language])
+            else:
+                print(f"{language}词库不存在")
+                return False
 
-        with open(glossary, "r", encoding="utf-8") as f:
-            glossary = json.load(f)
+            if not os.path.isfile(glossary):
+                print(f"词库路径不存在，请检查{glossary}")
+                return False
 
-        text_lite = text.replace(" ", "")
-        if text_lite in glossary:
-            res = glossary[text_lite]
-            return res
+            with open(glossary, "r", encoding="utf-8") as f:
+                glossary = json.load(f)
+
+            text_lite = text.replace(" ", "")
+            if text_lite in glossary:
+                res = glossary[text_lite]
+                print(f"{text} --> {res}")
+                return res
+
+        except Exception as e:
+            print(f"词库异常：{str(e)}")
+            return False
 
 # 使用示例
 # if __name__ == "__main__":

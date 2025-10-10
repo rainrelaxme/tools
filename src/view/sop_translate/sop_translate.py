@@ -306,71 +306,76 @@ def create_new_document(content_data, output_path, translations=None):
     """
     根据记录的内容和格式生成新的Word文档
     """
-    doc = Document()
-    set_paper_size(doc)
+    try:
+        doc = Document()
+        set_paper_size(doc)
 
-    for index, item in enumerate(content_data['content_data']):
-        if item['type'] == 'paragraph':
-            # 创建新段落
-            paragraph = doc.add_paragraph()
+        for index, item in enumerate(content_data['content_data']):
+            if item['type'] == 'paragraph':
+                # 创建新段落
+                paragraph = doc.add_paragraph()
 
-            # 应用文件头信息格式
-            if item['flag'] == 'preamble':
-                apply_preamble_format(paragraph, item)
-            else:
-                # 应用段落格式
-                apply_paragraph_format(paragraph, item['para_format'])
+                # 应用文件头信息格式
+                if item['flag'] == 'preamble':
+                    apply_preamble_format(paragraph, item)
+                else:
+                    # 应用段落格式
+                    apply_paragraph_format(paragraph, item['para_format'])
 
-                # 应用运行文本、格式
-                for run_data in item['runs']:
-                    run = paragraph.add_run(run_data['text'])
-                    apply_run_format(run, run_data)
+                    # 应用运行文本、格式
+                    for run_data in item['runs']:
+                        run = paragraph.add_run(run_data['text'])
+                        apply_run_format(run, run_data)
 
-        elif item['type'] == 'table':
-            # 创建表格
-            # 在表格前添加分页符
-            if item['element_index'] > 1:
-                page_break_para = doc.add_paragraph()
-                run = page_break_para.add_run()
-                run.add_break(WD_BREAK.PAGE)
+            elif item['type'] == 'table':
+                # 创建表格
+                # 在表格前添加分页符
+                if item['element_index'] > 1:
+                    page_break_para = doc.add_paragraph()
+                    run = page_break_para.add_run()
+                    run.add_break(WD_BREAK.PAGE)
 
-            table = doc.add_table(rows=len(item['rows']), cols=item['cols'])
-            table.style = 'Table Grid'
+                table = doc.add_table(rows=len(item['rows']), cols=item['cols'])
+                table.style = 'Table Grid'
 
-            # 设置表格样式
-            # 设置审批表格样式
-            if item['flag'] == 'approve':
-                apply_approveTable_format(table)
+                # 设置表格样式
+                # 设置审批表格样式
+                if item['flag'] == 'approve':
+                    apply_approveTable_format(table)
 
-            apply_table_format(table, item)
+                apply_table_format(table, item)
 
-            # 应用表格内容
-            for row_idx, row_data in enumerate(item['rows']):
-                for cell_idx, cell_data in enumerate(row_data['cells']):
-                    if (cell_data['grid_span'] > 1 and cell_data['is_merge_start']) or cell_data['grid_span'] == 1:
-                        cell = table.rows[row_idx].cells[cell_idx]
+                # 应用表格内容
+                for row_idx, row_data in enumerate(item['rows']):
+                    for cell_idx, cell_data in enumerate(row_data['cells']):
+                        if (cell_data['grid_span'] > 1 and cell_data['is_merge_start']) or cell_data['grid_span'] == 1:
+                            cell = table.rows[row_idx].cells[cell_idx]
 
-                        # 清空默认段落
-                        for paragraph in cell.paragraphs:
-                            p = paragraph._element
-                            p.getparent().remove(p)
+                            # 清空默认段落
+                            for paragraph in cell.paragraphs:
+                                p = paragraph._element
+                                p.getparent().remove(p)
 
-                        # 添加内容到单元格
-                        if cell_data['paragraphs']:
-                            for para_data in cell_data['paragraphs']:
-                                cell_para = cell.add_paragraph()
-                                apply_paragraph_format(cell_para, para_data['para_format'])
+                            # 添加内容到单元格
+                            if cell_data['paragraphs']:
+                                for para_data in cell_data['paragraphs']:
+                                    cell_para = cell.add_paragraph()
+                                    apply_paragraph_format(cell_para, para_data['para_format'])
 
-                                for run_data in para_data['runs']:
-                                    run = cell_para.add_run(run_data['text'])
-                                    apply_run_format(run, run_data)
-                        else:
-                            # 如果没有详细的段落信息，只添加文本
-                            cell.text = cell_data['text']
+                                    for run_data in para_data['runs']:
+                                        run = cell_para.add_run(run_data['text'])
+                                        apply_run_format(run, run_data)
+                            else:
+                                # 如果没有详细的段落信息，只添加文本
+                                cell.text = cell_data['text']
 
-    # 保存文档
-    doc.save(output_path)
-    print(f"新文档已保存到: {output_path}")
+    except Exception as e:
+        print(f"生成文件失败，异常信息：{e}")
+
+    finally:
+        # 保存文档
+        doc.save(output_path)
+        print(f"新文档已保存到: {output_path}")
 
 
 def apply_paragraph_format(paragraph, format_info):

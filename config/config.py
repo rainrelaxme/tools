@@ -23,3 +23,13 @@ TEST_DB = {
     'password': 'cmmes123!@#',
     'database': 'tool'
 }
+
+# 词库位置
+GLOSSARY = {
+    'dir': './config',
+    # 'dir': 'D:/Code/Project/tools/config',
+    'languages': {
+        '英语': 'glossary_en.json',
+        '越南语': 'glossary_vi.json',
+    }
+}
