@@ -9,12 +9,14 @@
 """
 
 import datetime
+import json
 
 from docx import Document
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_TAB_ALIGNMENT, WD_LINE_SPACING
 from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, Cm
+from data.data import DATA
 
 
 def apply_cover_template(content_data, cover_data):
@@ -136,7 +138,7 @@ def apply_cover_template(content_data, cover_data):
     # 5. 审批表格
     for item in cover_data:
         if item['type'] == 'table':
-            item['index'] = len(new_cover_data)+1
+            item['index'] = len(new_cover_data) + 1
             item['element_index'] = 1
             for row in item['rows']:
                 for cell in row['cells']:
@@ -181,7 +183,7 @@ def apply_preamble_format(paragraph, preamble_data):
     # 使用制表位
     split_text = preamble_data['text'].split('：')
     paragraph.add_run("\t")  # 制表符1
-    run1 = paragraph.add_run(split_text[0]+'：')
+    run1 = paragraph.add_run(split_text[0] + '：')
     run1.font.bold = True
     run1.font.size = Pt(16.0)
     run1.font.name = u'宋体'
@@ -190,7 +192,8 @@ def apply_preamble_format(paragraph, preamble_data):
     paragraph.add_run("\t")  # 制表符2
     run2 = paragraph.add_run(split_text[1].strip())
     run2.font.size = Pt(16.0)
-    run2.font.name = 'Times New Roman'
+    run2.font.name = 'Times New Roman'  # 设置西文字体
+    run2.element.rPr.rFonts.set(qn('w:eastAsia'), u'宋体')  # 设置中文字体
 
 
 def apply_approveTable_format(table):
@@ -199,295 +202,16 @@ def apply_approveTable_format(table):
     """
     for i in range(len(table.rows)):
         table.rows[i].height = Cm(2.5)
+    for i in range(len(table.columns)):
+        table.columns[i].width = Cm(2.5)
 
 
 if __name__ == '__main__':
     doc = Document()
-    content_data = {
-        "content_data" : [{
-            'type': 'paragraph',
-            'index': 2,
-            'element_index': 1,
-            'flag': '',
-            'text': '',
-            'para_format': {
-                'style': 'Normal',
-                'alignment': None,
-                'space_before': None,
-                'space_after': None,
-                'line_spacing': 2.0,
-                'first_line_indent': None,
-                'left_indent': None
-            },
-            'runs': []
-        }, {
-            'type': 'paragraph',
-            'index': 3,
-            'element_index': 2,
-            'flag': 'preamble',
-            'text': '文件编号：C2GM-Z13-000',
-            'para_format': {
-                'style': 'Normal',
-                'alignment': None,
-                'space_before': None,
-                'space_after': None,
-                'line_spacing': 254000,
-                'first_line_indent': 1828800,
-                'left_indent': None
-            },
-            'runs': [{
-                'text': '文件编号：',
-                'bold': True,
-                'italic': None,
-                'underline': None,
-                'font_size': 16.0,
-                'font_name': '宋体',
-                'font_color': None,
-                'font_color_theme': None
-            }, {
-                'text': 'C2GM-',
-                'bold': True,
-                'italic': None,
-                'underline': None,
-                'font_size': 16.0,
-                'font_name': '宋体',
-                'font_color': None,
-                'font_color_theme': None
-            }, {
-                'text': 'Z',
-                'bold': True,
-                'italic': None,
-                'underline': None,
-                'font_size': 16.0,
-                'font_name': '宋体',
-                'font_color': None,
-                'font_color_theme': None
-            }, {
-                'text': '13-000',
-                'bold': True,
-                'italic': None,
-                'underline': None,
-                'font_size': 16.0,
-                'font_name': '宋体',
-                'font_color': None,
-                'font_color_theme': None
-            }
-            ]
-        }, {
-            'type': 'paragraph',
-            'index': 4,
-            'element_index': 3,
-            'flag': 'preamble',
-            'text': 'Doc. No.：C2GM-Z13-000',
-            'para_format': {
-                'style': 'Normal',
-                'alignment': None,
-                'space_before': None,
-                'space_after': None,
-                'line_spacing': 254000,
-                'first_line_indent': 1828800,
-                'left_indent': None
-            },
-            'runs': [{
-                'text': 'Doc. No.：C2GM-Z13-000',
-                'bold': True,
-                'italic': None,
-                'underline': None,
-                'font_size': 16.0,
-                'font_name': '宋体',
-                'font_color': None,
-                'font_color_theme': None
-            }
-            ],
-            'language': '英语'
-        }, {
-            'type': 'paragraph',
-            'index': 5,
-            'element_index': 4,
-            'flag': 'preamble',
-            'text': 'Văn bản số：C2GM-Z13-000',
-            'para_format': {
-                'style': 'Normal',
-                'alignment': None,
-                'space_before': None,
-                'space_after': None,
-                'line_spacing': 254000,
-                'first_line_indent': 1828800,
-                'left_indent': None
-            },
-            'runs': [{
-                'text': 'Văn bản số：C2GM-Z13-000',
-                'bold': True,
-                'italic': None,
-                'underline': None,
-                'font_size': 16.0,
-                'font_name': '宋体',
-                'font_color': None,
-                'font_color_theme': None
-            }
-            ],
-            'language': '越南语'
-        }, {
-            'type': 'paragraph',
-            'index': 7,
-            'element_index': 6,
-            'flag': '',
-            'text': '',
-            'para_format': {
-                'style': 'Normal',
-                'alignment': None,
-                'space_before': None,
-                'space_after': None,
-                'line_spacing': 2.0,
-                'first_line_indent': None,
-                'left_indent': None
-            },
-            'runs': []
-        }, {
-            'type': 'paragraph',
-            'index': 7,
-            'element_index': 6,
-            'flag': 'preamble',
-            'text': '版    本：      A00',
-            'para_format': {
-                'style': 'Normal',
-                'alignment': None,
-                'space_before': None,
-                'space_after': None,
-                'line_spacing': 254000,
-                'first_line_indent': 1828800,
-                'left_indent': None
-            },
-            'runs': [{
-                'text': '版    本：',
-                'bold': True,
-                'italic': None,
-                'underline': None,
-                'font_size': 16.0,
-                'font_name': '宋体',
-                'font_color': None,
-                'font_color_theme': None
-            }, {
-                'text': '  ',
-                'bold': True,
-                'italic': None,
-                'underline': None,
-                'font_size': 16.0,
-                'font_name': '宋体',
-                'font_color': None,
-                'font_color_theme': None
-            }, {
-                'text': ' ',
-                'bold': True,
-                'italic': None,
-                'underline': None,
-                'font_size': 16.0,
-                'font_name': '宋体',
-                'font_color': None,
-                'font_color_theme': None
-            }, {
-                'text': '  ',
-                'bold': True,
-                'italic': None,
-                'underline': None,
-                'font_size': 16.0,
-                'font_name': '宋体',
-                'font_color': None,
-                'font_color_theme': None
-            }, {
-                'text': ' ',
-                'bold': True,
-                'italic': None,
-                'underline': None,
-                'font_size': 16.0,
-                'font_name': '宋体',
-                'font_color': None,
-                'font_color_theme': None
-            }, {
-                'text': 'A',
-                'bold': True,
-                'italic': None,
-                'underline': None,
-                'font_size': 16.0,
-                'font_name': '宋体',
-                'font_color': None,
-                'font_color_theme': None
-            }, {
-                'text': '0',
-                'bold': True,
-                'italic': None,
-                'underline': None,
-                'font_size': 16.0,
-                'font_name': '宋体',
-                'font_color': None,
-                'font_color_theme': None
-            }, {
-                'text': '0',
-                'bold': True,
-                'italic': None,
-                'underline': None,
-                'font_size': 16.0,
-                'font_name': '宋体',
-                'font_color': None,
-                'font_color_theme': None
-            }
-            ]
-        }, {
-            'type': 'paragraph',
-            'index': 8,
-            'element_index': 7,
-            'flag': 'preamble',
-            'text': 'Version：A00',
-            'para_format': {
-                'style': 'Normal',
-                'alignment': None,
-                'space_before': None,
-                'space_after': None,
-                'line_spacing': 254000,
-                'first_line_indent': 1828800,
-                'left_indent': None
-            },
-            'runs': [{
-                'text': 'Version：A00',
-                'bold': True,
-                'italic': None,
-                'underline': None,
-                'font_size': 16.0,
-                'font_name': '宋体',
-                'font_color': None,
-                'font_color_theme': None
-            }
-            ],
-            'language': '英语'
-        }, {
-            'type': 'paragraph',
-            'index': 9,
-            'element_index': 8,
-            'flag': 'preamble',
-            'text': 'Ấn bản：A00',
-            'para_format': {
-                'style': 'Normal',
-                'alignment': None,
-                'space_before': None,
-                'space_after': None,
-                'line_spacing': 254000,
-                'first_line_indent': 1828800,
-                'left_indent': None
-            },
-            'runs': [{
-                'text': 'Ấn bản：A00',
-                'bold': True,
-                'italic': None,
-                'underline': None,
-                'font_size': 16.0,
-                'font_name': '宋体',
-                'font_color': None,
-                'font_color_theme': None
-            }
-            ],
-            'language': '越南语'
-        }]
-    }
+
+    file_path = r"D:\Code\Project\tools\data\data.json"
+
+    content_data = DATA
 
     for index, item in enumerate(content_data['content_data']):
         if item['type'] == 'paragraph':

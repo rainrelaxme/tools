@@ -77,7 +77,6 @@ class DocContent:
                     'type': 'paragraph',
                     'index': position,
                     'element_index': index,
-                    'section': 'body',
                     'flag': '',
                     'text': para.text,
                     'para_format': self.get_paragraph_format(para),
@@ -91,7 +90,6 @@ class DocContent:
                     'type': 'table',
                     'index': position,
                     'element_index': index,
-                    'section': 'body',
                     'flag': '',
                     'table_alignment': WD_TABLE_ALIGNMENT.CENTER,  # 表格居中，非内容居中
                     'rows': self.get_table_content(table),
@@ -198,18 +196,38 @@ class DocContent:
     def get_header_content(self, doc):
         """
         获取页眉内容
+        首页：first_page_header
+        奇数页：header
+        偶数页：even_page_header
+        是否链接到前一节： is_linked_to_previous
+        是否首页不同：different_first_page_header_footer
+        是否奇偶页不同：???
         """
         header_content = []
         for index, section in enumerate(doc.sections):
-            header = section.header
-            if header:
-                content = self.get_content(header)
+            # 先处理首页的页眉
+            if section.different_first_page_header_footer:
+                first_page_data = {
+                    'type': 'header',
+                    'index': index,
+                    'element_index': index,
+                    'flag': 'first_page_header',
+                    'content': self.get_content(section.first_page_header)
+                }
+                header_content.append(first_page_data)
+
+            # 无法判断偶数页页眉是否应用
+            # if section.even_page_header:
+            #     pass
+
+            # 处理非首页的页眉，无法判断奇偶页是否相同，统一用奇数页的
+            if section.header:
                 header_data = {
                     'type': 'header',
                     'index': index,
                     'element_index': index,
-                    'flag': 'header',
-                    'content': content,
+                    'flag': 'odd_even_header',
+                    'content': self.get_content(section.header),
                 }
                 header_content.append(header_data)
         print("********header***********", header_content)
@@ -546,7 +564,6 @@ def add_table_translation(original_data, translator, language):
 
                                     new_cell['paragraphs'].append(new_para)
                     cell['paragraphs'] = new_cell['paragraphs']
-
     return new_data
 
 
@@ -707,8 +724,8 @@ if __name__ == "__main__":
     new_doc = DocContent()
     content_data = new_doc.get_content(doc)
 
-    # header_content = new_doc.get_header_content(doc)
-    # footer_content = new_doc.get_footer_content(doc)
+    header_content = new_doc.get_header_content(doc)
+    footer_content = new_doc.get_footer_content(doc)
 
     # 2. 标注关键信息：大标题、头信息，同时修改content_data内容
     new_doc.flag_title(content_data)

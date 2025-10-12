@@ -14,7 +14,8 @@ import sys
 
 from docx import Document
 
-from src.view.sop_translate.sop_translate import login, check_license, DocContent, add_paragraph_translation, add_table_translation, \
+from src.view.sop_translate.sop_translate import login, check_license, DocContent, add_paragraph_translation, \
+    add_table_translation, \
     create_new_document, doc_to_docx, add_cover_translation
 from src.view.sop_translate.template import apply_cover_template
 from src.view.sop_translate.translate_by_deepseek import Translator
@@ -38,7 +39,6 @@ def docx_translate(language):
 
     # 初始化翻译器
     translator = Translator()
-
 
     # 遍历文件夹中的所有文件
     for filename in os.listdir(input_folder):
@@ -98,8 +98,6 @@ def docx_translate(language):
     print(f"所有文件处理完成！输出目录: {output_folder}")
 
 
-
-
 if __name__ == '__main__':
 
     print("\n" + "=" * 100)
@@ -116,7 +114,7 @@ if __name__ == '__main__':
 
     while True:
         try:
-            print("请选择使用方式：\n"
+            print("请选择使用方式(请输入序号)：\n"
                   "1. 文本翻译\n"
                   "2. 文档翻译\n"
                   "3. 退出")
@@ -150,5 +148,6 @@ if __name__ == '__main__':
 
         except Exception as e:
             print(f"处理过程中出现错误: {e}")
-        current_time = datetime.datetime.now().strftime('%y%m%d%H%M%S')
-        print(f"\n********************{current_time} end**********************")
+        finally:
+            current_time = datetime.datetime.now().strftime('%y%m%d%H%M%S')
+            print(f"\n********************{current_time} end**********************")
