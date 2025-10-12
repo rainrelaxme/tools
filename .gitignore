@@ -162,4 +162,8 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 .idea/
 
+#  私人配置文件
 .config/private.py
+
+#  data
+.data
