@@ -53,7 +53,7 @@ pyinstaller --distpath D:/dist --workpath D:/build your_script.py
 
 ```
 ├─main
-├─app
+├─src
 │  ├─database
 │  ├─file
 │  ├─file_content
