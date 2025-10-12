@@ -52,17 +52,28 @@ pyinstaller --distpath D:/dist --workpath D:/build your_script.py
 ## 项目结构
 
 ```
-├─main
-├─src
-│  ├─database
-│  ├─file
-│  ├─file_content
-│  ├─picture
-│  └─others
-├─file
-|  └─temp 
-└─logs
-   
+├─config/
+├─data/
+│  ├─input/
+│  ├─output/
+│  ├─temp/
+|  └─template/
+└─docs/
+└─logs/
+├─scripts/
+├─src/
+│  ├─common/
+│  ├─component/
+│  ├─service/
+│  ├─test/
+|  ├─view/
+|  └─run.py
+├─tests/
+├─.gitignore
+├─main.py
+├─pyproject.toml
+├─README.md
+└─requirements.txt
 ```
 
 
