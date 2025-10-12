@@ -14,11 +14,11 @@ import sys
 
 from docx import Document
 
-from src.view.sop_translate.sop_translate import login, check_license, DocContent, add_paragraph_translation, \
+from src.view.professional_project.sop_translate.sop_translate import check_license, DocContent, add_paragraph_translation, \
     add_table_translation, \
     create_new_document, doc_to_docx, add_cover_translation
-from src.view.sop_translate.template import apply_cover_template
-from src.view.sop_translate.translate_by_deepseek import Translator
+from src.view.professional_project.sop_translate.template import apply_cover_template
+from src.view.professional_project.sop_translate.translate_by_deepseek import Translator
 
 
 def text_translate(language):

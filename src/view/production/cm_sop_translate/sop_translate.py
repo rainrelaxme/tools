@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 """
 @Project: tools.py
-@File   : sop_translate.py
+@File   : cm_sop_translate.py
 @Version:
 @Author : RainRelaxMe
 @Date   : 2025/9/24 02:00
@@ -20,8 +20,8 @@ import os
 import getpass
 from win32com import client as wc
 
-from src.view.sop_translate.template import apply_cover_template, apply_preamble_format, apply_approveTable_format
-from src.view.sop_translate.translate_by_deepseek import Translator
+from src.view.production.cm_sop_translate.template import apply_cover_template, apply_preamble_format, apply_approveTable_format
+from src.view.production.cm_sop_translate.translate_by_deepseek import Translator
 from config.config import VALID_ACCOUNTS
 
 
@@ -708,7 +708,7 @@ if __name__ == "__main__":
     # input_file = r"D:\Code\Project\tools\data\13.C2GM-Z13-000-A00 管理评审程序.docx"
     # input_file = r"F:\Code\Project\tools\data\13.C2GM-Z13-000-A00 管理评审程序.docx"
     # input_file = r"F:\Code\Project\tools\data\1.C2LG-001-000-A08 供应商管理程序.docx"
-    input_file = r"D:\Code\Project\tools\data\13. 封面模板.docx"
+    input_file = r"/data/13. 封面模板.docx"
 
 
     output_folder = r"D:\Code\Project\tools\data\temp"

@@ -3,6 +3,8 @@ import time
 import tkinter as tk
 from tkinter import filedialog
 
+from src.view.side_project.create_barcode.create_barcode import EAN_list
+
 CURRENT_TIME = time.time()  #获取当前时间float时间戳
 
 open_file()

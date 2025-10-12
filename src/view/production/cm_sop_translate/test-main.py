@@ -13,17 +13,17 @@ import os
 
 from docx import Document
 
-from src.view.sop_translate.sop_translate import DocContent, add_cover_translation, add_paragraph_translation, \
+from src.view.professional_project.sop_translate.sop_translate import DocContent, add_cover_translation, add_paragraph_translation, \
     add_table_translation, create_new_document
-from src.view.sop_translate.template import apply_cover_template
-from src.view.sop_translate.translate_by_deepseek import Translator
+from src.view.professional_project.sop_translate.template import apply_cover_template
+from src.view.professional_project.sop_translate.translate_by_deepseek import Translator
 
 if __name__ == "__main__":
     # 获取当前时间戳
     current_time = datetime.datetime.now().strftime('%y%m%d%H%M%S')
     language = ['英语', '越南语']
 
-    input_file = r"D:\Code\Project\tools\data\test.docx"
+    input_file = r"/data/test.docx"
     # input_file = r"D:\Code\Project\tools\data\1.C2LG-001-000-A08 供应商管理程序.docx"
     # input_file = r"D:\Code\Project\tools\data\13.C2GM-Z13-000-A00 管理评审程序.docx"
     # input_file = r"F:\Code\Project\tools\data\13.C2GM-Z13-000-A00 管理评审程序.docx"

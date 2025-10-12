@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
 """
-@Project: distance.py
+@Project: vector_distance.py
 @File   : excel_merge.py
 @Version:
 @Author : RainRelaxMe

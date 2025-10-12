@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
 """
-@Project: distance.py
+@Project: vector_distance.py
 @File   : __init__.py.py
 @Version:
 @Author : RainRelaxMe

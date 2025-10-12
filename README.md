@@ -43,8 +43,6 @@ pyinstaller --distpath D:/dist --workpath D:/build your_script.py
 ```
 
 ## 功能清单
-
- > * MPLM模具清单导入
  > * Excel压缩体积：压缩其中的图片
  > * 
 
@@ -56,8 +54,10 @@ pyinstaller --distpath D:/dist --workpath D:/build your_script.py
 ├─data/
 │  ├─input/
 │  ├─output/
+│  ├─sample/
 │  ├─temp/
-|  └─template/
+│  ├─template/
+|  └─test/
 └─docs/
 └─logs/
 ├─scripts/
@@ -67,6 +67,9 @@ pyinstaller --distpath D:/dist --workpath D:/build your_script.py
 │  ├─service/
 │  ├─test/
 |  ├─view/
+|  |  ├─demo/
+|  |  ├─production/
+|  |  └─side_project/
 |  └─run.py
 ├─tests/
 ├─.gitignore

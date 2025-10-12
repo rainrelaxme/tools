@@ -17,8 +17,8 @@ S00099_C01_P001_L3_PI127_G1_M1_20220318112324.jpg
 import os
 import glob
 
-from src.view.model_data_collection import file_classify
-from src.view.model_data_collection.json_edit import add_image_data_to_json, update_json_image_path
+from src.view.professional_project.model_data_collection import file_classify
+from src.view.professional_project.model_data_collection.json_edit import add_image_data_to_json, update_json_image_path
 
 
 def rename_file(directory_path, filetype, is_index):
