@@ -16,7 +16,7 @@ from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_TAB_ALIGNMENT, WD_LINE_SPACING
 from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, Cm
-from data.data import DATA
+# from data.data import DATA
 
 
 def apply_cover_template(content_data, cover_data):
@@ -206,20 +206,20 @@ def apply_approveTable_format(table):
         table.columns[i].width = Cm(2.5)
 
 
-if __name__ == '__main__':
-    doc = Document()
-
-    file_path = r"D:\Code\Project\tools\data\data.json"
-
-    content_data = DATA
-
-    for index, item in enumerate(content_data['content_data']):
-        if item['type'] == 'paragraph':
-            # 创建新段落
-            paragraph = doc.add_paragraph()
-
-            # 应用文件头信息格式
-            if item['flag'] == 'preamble':
-                apply_preamble_format(paragraph, item)
-
-    doc.save("test.docx")
+# if __name__ == '__main__':
+#     doc = Document()
+#
+#     file_path = r"D:\Code\Project\tools\data\data.json"
+#
+#     content_data = DATA
+#
+#     for index, item in enumerate(content_data['content_data']):
+#         if item['type'] == 'paragraph':
+#             # 创建新段落
+#             paragraph = doc.add_paragraph()
+#
+#             # 应用文件头信息格式
+#             if item['flag'] == 'preamble':
+#                 apply_preamble_format(paragraph, item)
+#
+#     doc.save("test.docx")

@@ -56,7 +56,7 @@ class Translator:
                 return False
 
             if not os.path.isfile(glossary):
-                print(f"词库路径不存在，请检查{glossary}")
+                print(f"词库文件不存在，请检查{glossary}")
                 return False
 
             with open(glossary, "r", encoding="utf-8") as f:
