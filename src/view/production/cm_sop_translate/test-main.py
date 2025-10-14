@@ -13,11 +13,12 @@ import os
 
 from docx import Document
 
-from src.view.production.cm_sop_translate.sop_translate import DocContent, add_cover_translation, \
+from src.view.production.cm_sop_translate.doc_process import DocumentPipline, add_cover_translation, \
     add_paragraph_translation, \
     add_table_translation, create_new_document, add_header_translation, add_footer_translation
-from src.view.production.cm_sop_translate.template import apply_cover_template
-from src.view.production.cm_sop_translate.translate_by_deepseek import Translator
+from src.view.production.cm_sop_translate.template import apply_cover_template, apply_template, apply_footer_format, \
+    main
+from src.view.production.cm_sop_translate.translator import Translator
 
 if __name__ == "__main__":
     # 获取当前时间戳
@@ -33,7 +34,7 @@ if __name__ == "__main__":
     print(f"********************start at {current_time}********************")
     # 1. 读取原文档内容
     doc = Document(input_file)
-    new_doc = DocContent()
+    new_doc = DocumentPipline()
     # 正文主题
     content_data = new_doc.get_content(doc)
     # 页眉、页脚
@@ -56,8 +57,8 @@ if __name__ == "__main__":
     after_para = add_paragraph_translation(body_data, translator, language)
     after_table = add_table_translation(after_para, translator, language)
     # ③ 翻译页眉、页脚
-    after_header = add_header_translation(header_data, translator, language)
-    after_footer = add_footer_translation(footer_data, translator, language)
+    translated_header = add_header_translation(header_data, translator, language)
+    translated_footer = add_footer_translation(footer_data, translator, language)
 
     # ④ 合并
     translated_content_data = []
@@ -65,13 +66,13 @@ if __name__ == "__main__":
         translated_content_data.append(item)
     for item in after_table:
         translated_content_data.append(item)
-    for item in after_header:
-        translated_content_data.append(item)
-    for item in after_footer:
-        translated_content_data.append(item)
+    # for item in after_header:
+    #     translated_content_data.append(item)
+    # for item in after_footer:
+    #     translated_content_data.append(item)
 
     # 5. 处理内容
-    formatted_content = apply_cover_template(translated_content_data, translated_cover_data)
+    formatted_content = apply_template(translated_content_data, header_data=translated_header, footer_data=translated_footer, cover_data=translated_cover_data)
 
     # 6. 创建新文档
     create_new_document(formatted_content, output_file)

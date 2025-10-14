@@ -1,6 +1,15 @@
 from docx import Document
 import json
 
+
+if __name__ == '__main__':
+    print("***********test************")
+    input = '页  　次：'
+    # input = '版    本：'
+
+    output = input.replace(" ", "").replace("　", "")
+    print(output)
+
 def extract_header_footer_content(docx_path):
     """
     提取文档中所有页眉页脚的文本内容，返回结构化数据
@@ -55,20 +64,21 @@ def extract_header_footer_content(docx_path):
     return result
 
 
-# 使用示例
-file_path = r"D:\Code\Project\tools\data\13. 封面模板.docx"  # 替换为你的文件路径
-content = extract_header_footer_content(file_path)
+def main1():
+    # 使用示例
+    file_path = r"D:\Code\Project\tools\data\13. 封面模板.docx"  # 替换为你的文件路径
+    content = extract_header_footer_content(file_path)
 
-# print("提取到的页眉内容:")
-# for i, header in enumerate(set(content['all_headers']), 1):
-#     print(f"  {i}. {header}")
+    # print("提取到的页眉内容:")
+    # for i, header in enumerate(set(content['all_headers']), 1):
+    #     print(f"  {i}. {header}")
 
-print("\n提取到的页脚内容:")
-for i, footer in enumerate(set(content['all_footers']), 1):
-    print(f"  {i}. {footer}")
+    print("\n提取到的页脚内容:")
+    for i, footer in enumerate(set(content['all_footers']), 1):
+        print(f"  {i}. {footer}")
 
-# 打印详细结构
-print(f"\n详细结构:\n{json.dumps(content, indent=2, ensure_ascii=False)}")
+    # 打印详细结构
+    print(f"\n详细结构:\n{json.dumps(content, indent=2, ensure_ascii=False)}")
 
 
 def get_header_content(doc):

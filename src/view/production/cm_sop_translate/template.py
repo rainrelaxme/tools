@@ -10,19 +10,51 @@
 
 import datetime
 import json
+import os
 
 from docx import Document
 from docx.enum.table import WD_TABLE_ALIGNMENT
-from docx.enum.text import WD_TAB_ALIGNMENT, WD_LINE_SPACING
+from docx.enum.text import WD_TAB_ALIGNMENT, WD_LINE_SPACING, WD_PARAGRAPH_ALIGNMENT
 from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, Cm
-# from data.data import DATA
+
+from src.view.production.cm_sop_translate.doc_process import apply_paragraph_format, apply_run_format
 
 
-def apply_cover_template(content_data, cover_data):
-    """应用封面模板"""
+def apply_template(content_data, header_data=None, footer_data=None, cover_data=None):
+    """应用模板内容，修改data"""
+    after_header = apply_header_template(content_data, header_data)
+    after_footer = apply_footer_template(after_header, footer_data)
+    after_cover = apply_cover_template(after_footer, cover_data)
+    return after_cover
+
+
+def apply_header_template(content_data, header_data=None):
+    """应用页眉模板，修改data"""
+    # 如果没有此内容，则不应用模板。
+    if header_data is None:
+        return content_data
+
+    # start
+    return content_data
+
+
+def apply_footer_template(content_data, footer_data=None):
+    """应用页眉模板，修改data"""
+    # 如果没有此内容，则不应用模板。
+    if footer_data is None:
+        return content_data
+    # start
+    return content_data
+
+
+def apply_cover_template(content_data, cover_data=None):
+    """应用封面模板，修改data"""
+    # 如果没有此内容，则不应用模板。
+    if cover_data is None:
+        return content_data
+
     new_cover_data = []
-
     para_data = {
         'type': 'paragraph',
         'index': None,
@@ -159,7 +191,7 @@ def apply_cover_template(content_data, cover_data):
 
 def apply_preamble_format(paragraph, preamble_data):
     """
-    应用文件头信息格式，通过制表符对齐
+    应用文件头信息格式，通过制表符对齐，生成的格式
     """
     # 清除默认制表位
     paragraph.paragraph_format.tab_stops.clear_all()
@@ -198,7 +230,7 @@ def apply_preamble_format(paragraph, preamble_data):
 
 def apply_approveTable_format(table):
     """
-    应用审批表格格式
+    应用审批表格格式，生成的格式
     """
     for i in range(len(table.rows)):
         table.rows[i].height = Cm(2.5)
@@ -206,20 +238,56 @@ def apply_approveTable_format(table):
         table.columns[i].width = Cm(2.5)
 
 
-# if __name__ == '__main__':
-#     doc = Document()
-#
-#     file_path = r"D:\Code\Project\tools\data\data.json"
-#
-#     content_data = DATA
-#
-#     for index, item in enumerate(content_data['content_data']):
-#         if item['type'] == 'paragraph':
-#             # 创建新段落
-#             paragraph = doc.add_paragraph()
-#
-#             # 应用文件头信息格式
-#             if item['flag'] == 'preamble':
-#                 apply_preamble_format(paragraph, item)
-#
-#     doc.save("test.docx")
+def apply_footer_format(doc, footer_data):
+    """应用页脚，生成的格式"""
+
+    for index, footer in enumerate(footer_data):
+        # 创建新的节
+        section = doc.sections[0]
+        # 设置首页页脚
+        if footer['type'] == 'first_page_footer':
+            # 设置首页页脚不同
+            section.different_first_page_header_footer = True
+
+            for para in footer['content']:
+                if para['type'] == 'paragraph':
+                    # 创建新段落
+                    paragraph = section.first_page_footer.add_paragraph()
+
+                    # 应用段落格式
+                    apply_paragraph_format(paragraph, para['para_format'])
+                    # 应用运行文本、格式
+                    for run_data in para['runs']:
+                        run = paragraph.add_run(run_data['text'])
+                        apply_run_format(run, run_data)
+
+        # 设置奇偶页页脚
+        if footer['type'] == 'odd_even_footer':
+            pass
+
+
+def main(data):
+    current_time = datetime.datetime.now().strftime('%y%m%d%H%M%S')
+    file_path = r"D:\Code\Project\tools\data\temp"
+    file = os.path.join(file_path, f'test_{current_time}.docx')
+
+    doc = Document()
+    apply_footer_format(doc, data)
+
+    doc.save(file)
+
+
+if __name__ == '__main__':
+    # doc.settings.odd_and_even_pages_header_footer = True
+    #
+    # for section in doc.sections:
+    #     section.different_first_page_header_footer = True
+    #     first_footer = section.first_page_footer
+    #     first_footer.paragraphs[0].add_run("这是首页！")
+    #     # first_footer.paragraphs[0].font.bold = True
+    #     # first_footer.paragraphs[0].add_run().font.size = Pt(36.0)
+    #     first_footer.paragraphs[0].alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+    file = r"D:\Code\Project\tools\data\data.json"
+    with open(file, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    main(data)
