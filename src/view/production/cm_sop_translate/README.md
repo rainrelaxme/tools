@@ -25,8 +25,7 @@
  - bug 
    - if i < 3: # 翻译语言的种类
    - 暂时不考虑分节，布局-分隔符-下一节
-   - # 判断奇偶数页眉页脚是否相同
-        different_odd_and_even = doc.settings.odd_and_even_pages_header_footer
+
 
 ### Doing
  - 页眉格式固定，页脚内容通用所有文件，只在第一页不计入页码
@@ -37,6 +36,11 @@
      3. 整理data的内容，使其适合生成
      4. ... 应用格式样式，生成内容
      5. 处理页码问题
+ - 页眉页脚问题：
+   - # 判断奇偶数页眉页脚是否相同
+        different_odd_and_even = doc.settings.odd_and_even_pages_header_footer
+   - 分节，要取消链接到前一节
+   - 首页不同在节内设置，奇偶页不同在整片文档设置
  - 封面前言的下划线问题
  - 前言信息没有对齐的问题 
  - 测试的文件，《14》表格没有分开的问题

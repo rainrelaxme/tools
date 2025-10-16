@@ -14,11 +14,10 @@ import sys
 
 from docx import Document
 
-from src.view.professional_project.sop_translate.sop_translate import check_license, DocContent, add_paragraph_translation, \
-    add_table_translation, \
-    create_new_document, doc_to_docx, add_cover_translation
-from src.view.professional_project.sop_translate.template import apply_cover_template
-from src.view.professional_project.sop_translate.translate_by_deepseek import Translator
+from src.view.production.cm_sop_translate.doc_process import doc_to_docx, DocumentContent, set_paper_size_format, \
+    add_content, add_cover_translation, add_paragraph_translation
+from src.view.production.cm_sop_translate.template import apply_footer_format, apply_header_format
+from src.view.production.cm_sop_translate.translator import Translator
 
 
 def text_translate(language):
@@ -60,8 +59,8 @@ def docx_translate(language):
 
             # 1. 读取原文档内容
             doc = Document(input_file)
-            new_doc = DocContent()
-            content_data = new_doc.get_content(doc)
+            new_doc = DocumentContent(doc)
+            content_data = new_doc.get_content()
 
             # header_content = new_doc.get_header_content(doc)
             # footer_content = new_doc.get_footer_content(doc)
@@ -72,7 +71,7 @@ def docx_translate(language):
             new_doc.flag_approveTable(content_data)
 
             # 3. 获取封面信息
-            cover_data = new_doc.get_cover_content(content_data)
+            cover_data = new_doc.split_cover_body_data(content_data)
 
             # 4. 翻译
             # ① 翻译封面
@@ -98,8 +97,28 @@ def docx_translate(language):
     print(f"所有文件处理完成！输出目录: {output_folder}")
 
 
-if __name__ == '__main__':
+def create_new_document(data, output_path):
+    """
+    根据记录的内容和格式生成新的Word文档
+    """
+    doc = Document()
+    set_paper_size_format(doc)
 
+    try:
+        apply_header_format(doc, data['header'])
+        apply_footer_format(doc, data['footer'])
+
+        content_data = data['cover'] + data['body']
+        add_content(doc, content_data)
+    except Exception as e:
+        print(f"生成文件失败，异常信息：{e}")
+    finally:
+        # 保存文档
+        doc.save(output_path)
+        print(f"新文档已保存到: {output_path}")
+
+
+if __name__ == '__main__':
     print("\n" + "=" * 100)
     print("\x20" * 45 + f"文档翻译系统")
     print("=" * 100)
@@ -133,18 +152,6 @@ if __name__ == '__main__':
             else:
                 print("输入错误，请重新输入")
 
-            # print("请选择目标语言（可多选，用\",\"分隔）：\n"
-            #       "1. 英语\n"
-            #       "2. 越南语")
-            # lang_input = input().strip()
-            # lang_list = lang_input.split(',')
-            # language = []
-            # for lang in lang_list:
-            #     if lang.strip() == '1':
-            #         language.append('英语')
-            #     if lang.strip() == '2':
-            #         language.append('越南语')
-            # print(f"您选择的目标语言为{language}")
 
         except Exception as e:
             print(f"处理过程中出现错误: {e}")

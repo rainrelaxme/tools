@@ -14,45 +14,49 @@ import os
 
 from docx import Document
 from docx.enum.table import WD_TABLE_ALIGNMENT
-from docx.enum.text import WD_TAB_ALIGNMENT, WD_LINE_SPACING, WD_PARAGRAPH_ALIGNMENT
+from docx.enum.text import WD_TAB_ALIGNMENT, WD_LINE_SPACING, WD_PARAGRAPH_ALIGNMENT, WD_ALIGN_PARAGRAPH, WD_BREAK
 from docx.oxml.ns import qn
-from docx.shared import Inches, Pt, Cm
-
-from src.view.production.cm_sop_translate.doc_process import apply_paragraph_format, apply_run_format
+from docx.shared import Inches, Pt, Cm, RGBColor
 
 
-def apply_template(content_data, header_data=None, footer_data=None, cover_data=None):
+def apply_template(body_data, header_data=None, footer_data=None, cover_data=None):
     """应用模板内容，修改data"""
-    after_header = apply_header_template(content_data, header_data)
-    after_footer = apply_footer_template(after_header, footer_data)
-    after_cover = apply_cover_template(after_footer, cover_data)
-    return after_cover
+    after_header = apply_header_template(header_data)
+    after_footer = apply_footer_template(footer_data)
+    after_cover = apply_cover_template(cover_data)
+    new_data = {
+        "header": after_header,
+        "footer": after_footer,
+        "cover": after_cover,
+        "body": body_data,
+    }
+    return new_data
 
 
-def apply_header_template(content_data, header_data=None):
+def apply_header_template(header_data=None):
     """应用页眉模板，修改data"""
     # 如果没有此内容，则不应用模板。
     if header_data is None:
-        return content_data
+        return None
 
     # start
-    return content_data
+    return header_data
 
 
-def apply_footer_template(content_data, footer_data=None):
+def apply_footer_template(footer_data=None):
     """应用页眉模板，修改data"""
     # 如果没有此内容，则不应用模板。
     if footer_data is None:
-        return content_data
+        return None
     # start
-    return content_data
+    return footer_data
 
 
-def apply_cover_template(content_data, cover_data=None):
+def apply_cover_template(cover_data=None):
     """应用封面模板，修改data"""
     # 如果没有此内容，则不应用模板。
     if cover_data is None:
-        return content_data
+        return None
 
     new_cover_data = []
     para_data = {
@@ -178,15 +182,7 @@ def apply_cover_template(content_data, cover_data=None):
                         para['para_format']['line_spacing'] = Pt(20)
             new_cover_data.append(item)
 
-    # 6. 更新content_data
-    del content_data[:len(cover_data)]
-    content_data[:0] = new_cover_data
-
-    res = {
-        "content_data": content_data,
-        "cover_data": new_cover_data
-    }
-    return res
+    return new_cover_data
 
 
 def apply_preamble_format(paragraph, preamble_data):
@@ -238,33 +234,187 @@ def apply_approveTable_format(table):
         table.columns[i].width = Cm(2.5)
 
 
+def apply_header_format(doc, header_data):
+    """应用页眉，生成的格式"""
+    # 设置奇偶页是否相同
+    doc.settings.odd_and_even_pages_header_footer = False
+
+    for index, header in enumerate(header_data):
+        # 创建节
+        section = doc.sections[0]
+        # 设置首页是否相同
+        section.different_first_page_header_footer = True
+
+        # 填充内容
+        if header["flag"] == "first_page_header":
+            add_content(section.first_page_header, header['content'])
+        if header["flag"] == "odd_even_header":
+            add_content(section.header, header['content'])
+
+
 def apply_footer_format(doc, footer_data):
     """应用页脚，生成的格式"""
-
     for index, footer in enumerate(footer_data):
         # 创建新的节
         section = doc.sections[0]
-        # 设置首页页脚
-        if footer['type'] == 'first_page_footer':
-            # 设置首页页脚不同
-            section.different_first_page_header_footer = True
+        # 设置首页页脚不同
+        section.different_first_page_header_footer = True
 
-            for para in footer['content']:
-                if para['type'] == 'paragraph':
-                    # 创建新段落
-                    paragraph = section.first_page_footer.add_paragraph()
+        # 填充内容
+        if footer["flag"] == "first_page_footer":
+            add_content(section.first_page_footer, footer["content"])
+        if footer["flag"] == 'odd_even_footer':
+            add_content(section.footer, footer["content"])
 
-                    # 应用段落格式
-                    apply_paragraph_format(paragraph, para['para_format'])
-                    # 应用运行文本、格式
-                    for run_data in para['runs']:
-                        run = paragraph.add_run(run_data['text'])
-                        apply_run_format(run, run_data)
 
-        # 设置奇偶页页脚
-        if footer['type'] == 'odd_even_footer':
+def apply_paragraph_format(paragraph, format_info):
+    """应用段落格式"""
+    # 使用安全的get方法访问字典，避免KeyError
+    if format_info.get('alignment'):
+        alignment_map = {
+            'CENTER': WD_ALIGN_PARAGRAPH.CENTER,
+            'CENTER (1)': WD_ALIGN_PARAGRAPH.CENTER,
+            'RIGHT': WD_ALIGN_PARAGRAPH.RIGHT,
+            'JUSTIFY': WD_ALIGN_PARAGRAPH.JUSTIFY,
+            'LEFT': WD_ALIGN_PARAGRAPH.LEFT
+        }
+        alignment = format_info['alignment'].split('.')[-1] if '.' in format_info['alignment'] else format_info[
+            'alignment']
+        paragraph.alignment = alignment_map.get(alignment, WD_ALIGN_PARAGRAPH.LEFT)
+
+    # 使用get方法安全访问，如果键不存在则返回None
+    space_before = format_info.get('space_before')
+    space_after = format_info.get('space_after')
+    line_spacing = format_info.get('line_spacing')
+    first_line_indent = format_info.get('first_line_indent')
+    left_indent = format_info.get('left_indent')
+
+    # if space_before is not None:
+    #     paragraph.paragraph_format.space_before = space_before
+    if space_before:
+        paragraph.paragraph_format.space_before = space_before
+
+    if space_after:
+        paragraph.paragraph_format.space_after = space_after
+    else:
+        paragraph.paragraph_format.space_after = 0  # 段落后间距None会默认设置为10，需设置为0
+
+    if line_spacing:
+        paragraph.paragraph_format.line_spacing = line_spacing
+    if first_line_indent:
+        paragraph.paragraph_format.first_line_indent = first_line_indent
+    if left_indent:
+        paragraph.paragraph_format.left_indent = left_indent
+
+
+def apply_table_format(table, table_format_info):
+    """
+    处理表格样式
+    """
+    # 自动调整列宽：禁用
+    table.autofit = False
+
+    # 表格对齐方式，非内容对齐方式
+    table.alignment = table_format_info['table_alignment']
+
+    # 单元格样式
+    for row in table_format_info['rows']:
+        for cell in row['cells']:
+            row = cell['row']
+            col = cell['col']
+            # 设置表格宽度
+            if hasattr(cell, 'width'):
+                table.cell(row, col).width = Inches(cell['width'])
+
+            # 合并单元格
+            if cell['is_merge_start']:
+                row = cell['row']
+                col = cell['col']
+                # 处理水平合并（gridSpan）
+                if cell['grid_span'] > 1:
+                    # 合并水平单元格
+                    start_cell = table.rows[row].cells[col]
+                    end_cell = table.rows[row].cells[col + cell['grid_span'] - 1]
+                    start_cell.merge(end_cell)
+    # if table_format_info['flag'] == 'top_title':
+    #     table.autofit = True
+
+
+def apply_run_format(run, run_data):
+    """应用运行文本格式"""
+    # 使用get方法安全访问
+    run.bold = run_data.get('bold') if run_data.get('bold') else False
+    run.italic = run_data.get('italic') if run_data.get('italic') else False
+    run.underline = run_data.get('underline') if run_data.get('underline') else False
+
+    font_size = run_data.get('font_size')
+    if font_size:
+        run.font.size = Pt(font_size)
+
+    font_name = run_data.get('font_name')
+    if font_name:
+        run.font.name = font_name
+        run.element.rPr.rFonts.set(qn('w:eastAsia'), font_name)
+    else:
+        # 无font_name时采用默认字体
+        if run.text.strip():
+            run.font.name = 'Times New Roman'  # 设置西文字体
+            run.element.rPr.rFonts.set(qn('w:eastAsia'), u'宋体')  # 设置中文字体
+        else:
+            run.font.name = u'宋体'
+            run.element.rPr.rFonts.set(qn('w:eastAsia'), u'宋体')  # 设置中文字体
+
+    font_color = run_data.get('font_color')
+    if font_color:
+        try:
+            run.font.color.rgb = RGBColor(*font_color)
+        except:
             pass
 
+
+def add_content(block, data):
+    """对块（doc、section、header、footer）中添加内容"""
+    for index, item in enumerate(data):
+        if item['type'] == 'paragraph':
+            # 创建新段落
+            paragraph = block.add_paragraph()
+            # 应用段落格式
+            apply_paragraph_format(paragraph, item['para_format'])
+            # 应用运行文本、格式
+            for run_data in item['runs']:
+                run = paragraph.add_run(run_data['text'])
+                apply_run_format(run, run_data)
+        # if item['type'] == 'table':
+        #     # 创建表格
+        #     table = block.add_table(rows=len(item['rows']), cols=item['cols'])
+        #     table.style = 'Table Grid'
+        #
+        #     # 设置表格样式
+        #     apply_table_format(table, item)
+        #
+        #     # 应用表格内容
+        #     for row_idx, row_data in enumerate(item['rows']):
+        #         for cell_idx, cell_data in enumerate(row_data['cells']):
+        #             if (cell_data['grid_span'] > 1 and cell_data['is_merge_start']) or cell_data['grid_span'] == 1:
+        #                 cell = table.rows[row_idx].cells[cell_idx]
+        #
+        #                 # 清空默认段落
+        #                 for paragraph in cell.paragraphs:
+        #                     p = paragraph._element
+        #                     p.getparent().remove(p)
+        #
+        #                 # 添加内容到单元格
+        #                 if cell_data['paragraphs']:
+        #                     for para_data in cell_data['paragraphs']:
+        #                         cell_para = cell.add_paragraph()
+        #                         apply_paragraph_format(cell_para, para_data['para_format'])
+        #
+        #                         for run_data in para_data['runs']:
+        #                             run = cell_para.add_run(run_data['text'])
+        #                             apply_run_format(run, run_data)
+        #                 else:
+        #                     # 如果没有详细的段落信息，只添加文本
+        #                     cell.text = cell_data['text']
 
 def main(data):
     current_time = datetime.datetime.now().strftime('%y%m%d%H%M%S')
@@ -273,8 +423,15 @@ def main(data):
 
     doc = Document()
     apply_footer_format(doc, data)
+    # apply_header_format(doc, header_data)
+
+    i = 1
+    while i < 30:
+        doc.add_paragraph().add_run(f"这是第{i}段")
+        i += 1
 
     doc.save(file)
+    print(f"{file} was saved successfully.")
 
 
 if __name__ == '__main__':

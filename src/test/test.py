@@ -4,11 +4,14 @@ import json
 
 if __name__ == '__main__':
     print("***********test************")
-    input = '页  　次：'
-    # input = '版    本：'
+    # !/usr/bin/python
 
-    output = input.replace(" ", "").replace("　", "")
-    print(output)
+    aList = [123, 'xyz', 'zara', 'abc', 123];
+    bList = [2009, 'manni'];
+    aList.extend(bList)
+
+    print("Extended List : ", aList)
+
 
 def extract_header_footer_content(docx_path):
     """

@@ -2,7 +2,7 @@ import datetime
 import os
 
 from docx import Document
-from docx.enum.text import WD_TAB_ALIGNMENT
+from docx.enum.text import WD_TAB_ALIGNMENT, WD_PARAGRAPH_ALIGNMENT
 from docx.shared import Inches
 
 
@@ -62,12 +62,21 @@ def set_custom_2():
 
     document.save('test.docx')  # 保存
 
+
 if __name__ == '__main__':
-    doc = set_custom_tab_stops()
-    output_folder = r"F:\Code\Project\tools\data\temp"
     current_time = datetime.datetime.now().strftime('%y%m%d%H%M%S')
+    file_path = r"D:\Code\Project\tools\data\temp"
+    file = os.path.join(file_path, f'test_{current_time}.docx')
 
-    file_base_name = 'test2.docx'
-    output_file = output_folder + "/" + file_base_name.replace(".docx", f"_translate_{current_time}.docx")
+    doc = Document()
+    doc.settings.odd_and_even_pages_header_footer = True
 
-    doc.save(output_file)
+    for section in doc.sections:
+        section.different_first_page_header_footer = True
+        first_footer = section.first_page_footer
+        first_footer.paragraphs[0].add_run("这是首页！")
+        # first_footer.paragraphs[0].font.bold = True
+        # first_footer.paragraphs[0].add_run().font.size = Pt(36.0)
+        first_footer.paragraphs[0].alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+
+    doc.save(file)

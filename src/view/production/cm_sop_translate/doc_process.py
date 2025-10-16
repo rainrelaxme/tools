@@ -24,9 +24,9 @@ from src.view.production.cm_sop_translate.template import apply_cover_template, 
 from src.view.production.cm_sop_translate.translator import Translator
 
 
-class DocumentPipline:
-    def __init__(self):
-        self.title = ''
+class DocumentContent:
+    def __init__(self, doc, new_doc=None):
+        self.source_doc = doc
 
     def get_content(self, doc):
         """
@@ -140,13 +140,13 @@ class DocumentPipline:
 
                 row_data['cells'].append(cell_content)
             rows.append(row_data)
-
         return rows
 
-    def get_cover_content(self, content_data):
+    def split_cover_body_data(self, content_data):
         """获取word中封面的内容：修订记录表格之前内容算作封面"""
         # 先判断标题是表格还是文本，如果是表格那么首页就截止到第二个表格
-        cover_content = []
+        cover_data = []
+        body_data = []
         top_title_type = ''
         cover_table_num = 1
         for index, item in enumerate(content_data):
@@ -157,13 +157,19 @@ class DocumentPipline:
             if item['type'] == 'table' and item['element_index'] == cover_table_num:
                 break
             # 先判断再记录
-            cover_content.append(item)
+            cover_data.append(item)
+        body_data = content_data[len(cover_data) :]
 
-        return cover_content
+        data = {
+            "cover_data": cover_data,
+            "body_data": body_data,
+            "content_data": content_data
+        }
+        return data
 
-    def get_body_content(self):
-        """获取正文内容"""
-        pass
+    # def split_cover_body_data(self, content_data):
+    #     """就取第一页"""
+    #     pass
 
     def get_header_content(self, doc):
         """
@@ -175,54 +181,67 @@ class DocumentPipline:
         是否首页不同：different_first_page_header_footer
         是否奇偶页不同：doc.settings.odd_and_even_pages_header_footer
         """
-        header_content = []
-
-        # 判断奇偶数页眉页脚是否相同
-        different_odd_and_even = doc.settings.odd_and_even_pages_header_footer
+        header_data = []
 
         for index, section in enumerate(doc.sections):
-            # 先处理首页的页眉
-            if section.different_first_page_header_footer:
-                first_page_data = {
-                    'type': 'header',
-                    'index': index,
-                    'element_index': index,
-                    'flag': 'first_page_header',
-                    'content': self.get_content(section.first_page_header)
-                }
-                header_content.append(first_page_data)
+            section_data = {
+                "type": 'header',
+                "index": '',
+                "section_index": index,
+                "is_linked_to_previous": section.header.is_linked_to_previous,
+                "is_different_first_page": section.different_first_page_header_footer,
+                "is_different_odd_and_even": doc.settings.odd_and_even_pages_header_footer,     # 判断奇偶数页眉页脚是否相同
+                "first_page_header_content": self.get_content(section.first_page_header),       # 判断首页是否相同
+                "odd_page_header": self.get_content(section.header),        # 如果奇偶页相同，则全部在header里
+                "even_page_header": self.get_content(section.even_page_header),
+            }
+            header_data.append(section_data)
+            # # 先处理首页的页眉
+            # if section.different_first_page_header_footer:
+            #     first_page_data = {
+            #         'type': 'header',
+            #         'index': "",
+            #         "section": index,
+            #         'is_linked_to_previous': section.header.is_linked_to_previous,
+            #         'flag': 'first_page_header',
+            #         'content': self.get_content(section.first_page_header)
+            #     }
+            #     header_content.append(first_page_data)
+            #
+            # # 处理非首页的页眉，先判断奇偶页是否相同
+            # if different_odd_and_even:
+            #     # 奇数页页眉
+            #     odd_header_data = {
+            #         "section": index,
+            #         'type': 'header',
+            #         'index': index,
+            #         'element_index': index,
+            #         'flag': 'odd_page_header',
+            #         'content': self.get_content(section.header)
+            #     }
+            #     header_content.append(odd_header_data)
+            #     # 偶数页页眉
+            #     even_header_data = {
+            #         "section": index,
+            #         'type': 'header',
+            #         'index': index,
+            #         'element_index': index,
+            #         'flag': 'even_page_header',
+            #         'content': self.get_content(section.even_page_header)
+            #     }
+            #     header_content.append(even_header_data)
+            # else:
+            #     header_data = {
+            #         "section": index,
+            #         'type': 'header',
+            #         'index': index,
+            #         'element_index': index,
+            #         'flag': 'odd_even_header',
+            #         'content': self.get_content(section.header),
+            #     }
+            #     header_content.append(header_data)
 
-            # 处理非首页的页眉，先判断奇偶页是否相同
-            if different_odd_and_even:
-                # 奇数页页眉
-                odd_header_data = {
-                    'type': 'header',
-                    'index': index,
-                    'element_index': index,
-                    'flag': 'odd_page_header',
-                    'content': self.get_content(section.header)
-                }
-                header_content.append(odd_header_data)
-                # 偶数页页眉
-                even_header_data = {
-                    'type': 'header',
-                    'index': index,
-                    'element_index': index,
-                    'flag': 'even_page_header',
-                    'content': self.get_content(section.even_page_header)
-                }
-                header_content.append(even_header_data)
-            else:
-                header_data = {
-                    'type': 'header',
-                    'index': index,
-                    'element_index': index,
-                    'flag': 'odd_even_header',
-                    'content': self.get_content(section.header),
-                }
-                header_content.append(header_data)
-
-        return header_content
+        return header_data
 
     def get_footer_content(self, doc):
         """
@@ -234,54 +253,22 @@ class DocumentPipline:
         是否首页不同：different_first_page_header_footer
         是否奇偶页不同：doc.settings.odd_and_even_pages_header_footer
         """
-        footer_content = []
-
-        # 判断奇偶数页眉页脚是否相同
-        different_odd_and_even = doc.settings.odd_and_even_pages_header_footer
+        footer_data = []
 
         for index, section in enumerate(doc.sections):
-            # 先处理首页的页脚
-            if section.different_first_page_header_footer:
-                first_page_data = {
-                    'type': 'footer',
-                    'index': index,
-                    'element_index': index,
-                    'flag': 'first_page_footer',
-                    'content': self.get_content(section.first_page_footer)
-                }
-                footer_content.append(first_page_data)
-
-                # 处理非首页的页脚，先判断奇偶页是否相同
-                if different_odd_and_even:
-                    # 奇数页页脚
-                    odd_footer_data = {
-                        'type': 'footer',
-                        'index': index,
-                        'element_index': index,
-                        'flag': 'odd_page_footer',
-                        'content': self.get_content(section.footer)
-                    }
-                    footer_content.append(odd_footer_data)
-                    # 偶数页页脚
-                    even_footer_data = {
-                        'type': 'footer',
-                        'index': index,
-                        'element_index': index,
-                        'flag': 'even_page_footer',
-                        'content': self.get_content(section.even_page_footer)
-                    }
-                    footer_content.append(even_footer_data)
-                else:
-                    footer_data = {
-                        'type': 'footer',
-                        'index': index,
-                        'element_index': index,
-                        'flag': 'odd_even_footer',
-                        'content': self.get_content(section.footer)
-                    }
-                    footer_content.append(footer_data)
-
-        return footer_content
+            section_data = {
+                "type": 'footer',
+                "index": '',
+                "section_index": index,
+                "is_linked_to_previous": section.footer.is_linked_to_previous,
+                "is_different_first_page": section.different_first_page_header_footer,
+                "is_different_odd_and_even": doc.settings.odd_and_even_pages_header_footer,  # 判断奇偶数页眉页脚是否相同
+                "first_page_header_content": self.get_content(section.first_page_footer),  # 判断首页是否相同
+                "odd_page_header": self.get_content(section.footer),  # 如果奇偶页相同，则全部在header里
+                "even_page_header": self.get_content(section.even_page_footer),
+            }
+            footer_data.append(section_data)
+        return footer_data
 
     def get_paragraph_format(self, paragraph):
         """提取段落格式信息"""
@@ -330,6 +317,7 @@ class DocumentPipline:
                 content_data[index]['flag'] = 'top_title'
                 title_text = item['rows'][0]['cells'][0]['text'].strip()
                 break
+        return content_data
 
     def flag_preamble(self, content_data):
         """
@@ -347,6 +335,7 @@ class DocumentPipline:
         for index, item in enumerate(cut_title_data):
             if item['type'] == 'paragraph' and item['text'].strip():
                 cut_title_data[index]['flag'] = 'preamble'
+        return content_data
 
     def flag_approveTable(self, content_data):
         """
@@ -355,103 +344,91 @@ class DocumentPipline:
         for item in content_data:
             if item['type'] == 'table' and item['element_index'] == 0:
                 item['flag'] = 'approve'
+        return content_data
+
+class GenDocument:
+    pass
 
 
 def set_paper_size_format(doc):
-        """
-        设置纸张大小和页边距:A4,页边距2/1.1/2/2
-        """
-        # 获取第一个节（默认存在）
-        section = doc.sections[0]
-
-        # 设置纸张方向（纵向或横向）
-        section.orientation = WD_ORIENTATION.PORTRAIT  # PORTRAIT: 纵向, LANDSCAPE: 横向
-
-        # 设置纸张大小（A4）
-        section.page_width = Cm(21)  # A4宽度 21cm
-        section.page_height = Cm(29.7)  # A4高度 29.7cm
-
-        # 设置页边距（上下左右）
-        section.top_margin = Cm(2)  # 上边距
-        section.bottom_margin = Cm(1.1)  # 下边距
-        section.left_margin = Cm(2)  # 左边距
-        section.right_margin = Cm(2)  # 右边距
-
-
-def create_new_document(content_data, output_path, translations=None):
     """
-    根据记录的内容和格式生成新的Word文档
+    设置纸张大小和页边距:A4,页边距2/1.1/2/2
     """
-    try:
-        doc = Document()
-        set_paper_size_format(doc)
+    # 获取第一个节（默认存在）
+    section = doc.sections[0]
 
-        for index, item in enumerate(content_data['content_data']):
-            if item['type'] == 'paragraph':
-                # 创建新段落
-                paragraph = doc.add_paragraph()
+    # 设置纸张方向（纵向或横向）
+    section.orientation = WD_ORIENTATION.PORTRAIT  # PORTRAIT: 纵向, LANDSCAPE: 横向
 
-                # 应用文件头信息格式
-                if item['flag'] == 'preamble':
-                    apply_preamble_format(paragraph, item)
-                else:
-                    # 应用段落格式
-                    apply_paragraph_format(paragraph, item['para_format'])
+    # 设置纸张大小（A4）
+    section.page_width = Cm(21)  # A4宽度 21cm
+    section.page_height = Cm(29.7)  # A4高度 29.7cm
 
-                    # 应用运行文本、格式
-                    for run_data in item['runs']:
-                        run = paragraph.add_run(run_data['text'])
-                        apply_run_format(run, run_data)
+    # 设置页边距（上下左右）
+    section.top_margin = Cm(2)  # 上边距
+    section.bottom_margin = Cm(1.1)  # 下边距
+    section.left_margin = Cm(2)  # 左边距
+    section.right_margin = Cm(2)  # 右边距
 
-            elif item['type'] == 'table':
-                # 创建表格
-                # 在表格前添加分页符
-                if item['element_index'] > 1:
-                    page_break_para = doc.add_paragraph()
-                    run = page_break_para.add_run()
-                    run.add_break(WD_BREAK.PAGE)
 
-                table = doc.add_table(rows=len(item['rows']), cols=item['cols'])
-                table.style = 'Table Grid'
+def add_content(block, data):
+    """对块（doc、section、header、footer）中添加内容"""
+    for index, item in enumerate(data):
+        if item['type'] == 'paragraph':
+            # 创建新段落
+            paragraph = block.add_paragraph()
 
-                # 设置表格样式
-                # 设置审批表格样式
-                if item['flag'] == 'approve':
-                    apply_approveTable_format(table)
+            # 应用文件头信息格式
+            if item['flag'] == 'preamble':
+                apply_preamble_format(paragraph, item)
+            else:
+                # 应用段落格式
+                apply_paragraph_format(paragraph, item['para_format'])
+                # 应用运行文本、格式
+                for run_data in item['runs']:
+                    run = paragraph.add_run(run_data['text'])
+                    apply_run_format(run, run_data)
+        if item['type'] == 'table':
+            # 创建表格
+            # # 在表格前添加分页符
+            if item['element_index'] > 1:
+                page_break_para = block.add_paragraph()
+                run = page_break_para.add_run()
+                run.add_break(WD_BREAK.PAGE)
 
-                apply_table_format(table, item)
+            table = block.add_table(rows=len(item['rows']), cols=item['cols'])
+            table.style = 'Table Grid'
 
-                # 应用表格内容
-                for row_idx, row_data in enumerate(item['rows']):
-                    for cell_idx, cell_data in enumerate(row_data['cells']):
-                        if (cell_data['grid_span'] > 1 and cell_data['is_merge_start']) or cell_data['grid_span'] == 1:
-                            cell = table.rows[row_idx].cells[cell_idx]
+            # 设置审批表格样式
+            if item['flag'] == 'approve':
+                apply_approveTable_format(table)
 
-                            # 清空默认段落
-                            for paragraph in cell.paragraphs:
-                                p = paragraph._element
-                                p.getparent().remove(p)
+            # 设置表格样式
+            apply_table_format(table, item)
 
-                            # 添加内容到单元格
-                            if cell_data['paragraphs']:
-                                for para_data in cell_data['paragraphs']:
-                                    cell_para = cell.add_paragraph()
-                                    apply_paragraph_format(cell_para, para_data['para_format'])
+            # 应用表格内容
+            for row_idx, row_data in enumerate(item['rows']):
+                for cell_idx, cell_data in enumerate(row_data['cells']):
+                    if (cell_data['grid_span'] > 1 and cell_data['is_merge_start']) or cell_data['grid_span'] == 1:
+                        cell = table.rows[row_idx].cells[cell_idx]
 
-                                    for run_data in para_data['runs']:
-                                        run = cell_para.add_run(run_data['text'])
-                                        apply_run_format(run, run_data)
-                            else:
-                                # 如果没有详细的段落信息，只添加文本
-                                cell.text = cell_data['text']
+                        # 清空默认段落
+                        for paragraph in cell.paragraphs:
+                            p = paragraph._element
+                            p.getparent().remove(p)
 
-    except Exception as e:
-        print(f"生成文件失败，异常信息：{e}")
+                        # 添加内容到单元格
+                        if cell_data['paragraphs']:
+                            for para_data in cell_data['paragraphs']:
+                                cell_para = cell.add_paragraph()
+                                apply_paragraph_format(cell_para, para_data['para_format'])
 
-    finally:
-        # 保存文档
-        doc.save(output_path)
-        print(f"新文档已保存到: {output_path}")
+                                for run_data in para_data['runs']:
+                                    run = cell_para.add_run(run_data['text'])
+                                    apply_run_format(run, run_data)
+                        else:
+                            # 如果没有详细的段落信息，只添加文本
+                            cell.text = cell_data['text']
 
 
 def add_header(doc):
@@ -765,7 +742,6 @@ def doc_to_docx(doc_path, docx_path=None):
     finally:
         word.Quit()
 
-
 # if __name__ == "__main__":
 #     # 获取当前时间戳
 #     current_time = datetime.datetime.now().strftime('%y%m%d%H%M%S')
@@ -801,7 +777,7 @@ def doc_to_docx(doc_path, docx_path=None):
 #     new_doc.flag_approveTable(content_data)
 #
 #     # 3. 获取封面信息
-#     cover_data = new_doc.get_cover_content(content_data)
+#     cover_data = new_doc.split_cover_body_data(content_data)
 #
 #     # 4. 翻译
 #     # ① 翻译封面
