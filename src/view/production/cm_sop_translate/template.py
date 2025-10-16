@@ -239,32 +239,35 @@ def apply_header_format(doc, header_data):
     # 设置奇偶页是否相同
     doc.settings.odd_and_even_pages_header_footer = False
 
-    for index, header in enumerate(header_data):
+    for index, item in enumerate(header_data):
         # 创建节
-        section = doc.sections[0]
+        section = doc.sections[item['section_index']]
+
         # 设置首页是否相同
         section.different_first_page_header_footer = True
-
         # 填充内容
-        if header["flag"] == "first_page_header":
-            add_content(section.first_page_header, header['content'])
-        if header["flag"] == "odd_even_header":
-            add_content(section.header, header['content'])
+        if item['first_page_header_content']:
+            add_content(section.first_page_header, item['first_page_header_content'])
+        if item['odd_page_header']:
+            add_content(section.header, item['odd_page_header'])
 
 
 def apply_footer_format(doc, footer_data):
     """应用页脚，生成的格式"""
-    for index, footer in enumerate(footer_data):
-        # 创建新的节
-        section = doc.sections[0]
+    # 设置奇偶页是否相同
+    doc.settings.odd_and_even_pages_header_footer = False
+
+    for index, item in enumerate(footer_data):
+        # 创建节
+        section = doc.sections[item['section_index']]
+
         # 设置首页页脚不同
         section.different_first_page_header_footer = True
-
         # 填充内容
-        if footer["flag"] == "first_page_footer":
-            add_content(section.first_page_footer, footer["content"])
-        if footer["flag"] == 'odd_even_footer':
-            add_content(section.footer, footer["content"])
+        if item['first_page_footer_content']:
+            add_content(section.first_page_footer, item['first_page_footer_content'])
+        if item['odd_page_footer']:
+            add_content(section.footer, item['odd_page_footer'])
 
 
 def apply_paragraph_format(paragraph, format_info):

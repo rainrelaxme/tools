@@ -26,8 +26,8 @@ if __name__ == "__main__":
     current_time = datetime.datetime.now().strftime('%y%m%d%H%M%S')
     language = ['英语', '越南语']
 
-    input_file = r"D:\Code\Project\tools\data\test\test.docx"
-    output_folder = r"D:\Code\Project\tools\data\temp"
+    input_file = r"F:\Code\Project\tools\data\test\test.docx"
+    output_folder = r"F:\Code\Project\tools\data\temp"
     file_base_name = os.path.basename(input_file)
     output_file = output_folder + "/" + file_base_name.replace(".docx", f"_translate_{current_time}.docx")
 
@@ -48,7 +48,7 @@ if __name__ == "__main__":
     after_approve = new_doc.flag_approveTable(content_data)
 
     # 3. 拆分封面和正文
-    data = new_doc.split_cover_body_data(content_data)
+    data = new_doc.split_cover_body_data(after_approve)
 
     # 4. 翻译
     # ① 翻译封面

@@ -263,9 +263,9 @@ class DocumentContent:
                 "is_linked_to_previous": section.footer.is_linked_to_previous,
                 "is_different_first_page": section.different_first_page_header_footer,
                 "is_different_odd_and_even": doc.settings.odd_and_even_pages_header_footer,  # 判断奇偶数页眉页脚是否相同
-                "first_page_header_content": self.get_content(section.first_page_footer),  # 判断首页是否相同
-                "odd_page_header": self.get_content(section.footer),  # 如果奇偶页相同，则全部在header里
-                "even_page_header": self.get_content(section.even_page_footer),
+                "first_page_footer_content": self.get_content(section.first_page_footer),  # 判断首页是否相同
+                "odd_page_footer": self.get_content(section.footer),  # 如果奇偶页相同，则全部在header里
+                "even_page_footer": self.get_content(section.even_page_footer),
             }
             footer_data.append(section_data)
         return footer_data
@@ -681,18 +681,22 @@ def add_cover_translation(original_data, translator, language):
 def add_header_translation(original_data, translator, language):
     """页眉翻译，只有最顶部的“秘密”是不产生新的段落"""
     new_data = []
-    for index, item in enumerate(original_data):
+    for item in original_data:
         item_translation = {
             'type': item['type'],
             'index': item['index'],
-            'element_index': item['element_index'],
-            'flag': item['flag'],
-            'content': []
+            'section_index': item['section_index'],
+            "is_linked_to_previous": item['is_linked_to_previous'],
+            "is_different_first_page": item['is_different_first_page'],
+            "is_different_odd_and_even": item['is_different_odd_and_even'],
+            "first_page_header_content": add_table_translation(add_paragraph_translation(item['first_page_header_content'], translator, language), translator, language),
+            'odd_page_header': add_table_translation(add_paragraph_translation(item['odd_page_header'], translator, language), translator, language),
+            'even_page_header': add_table_translation(add_paragraph_translation(item['even_page_header'], translator, language), translator, language)
         }
-        after_para = add_paragraph_translation(item['content'], translator, language)
-        after_table = add_table_translation(after_para, translator, language)
-        for i in after_table:
-            item_translation['content'].append(i)
+        # after_para = add_paragraph_translation(item['content'], translator, language)
+        # after_table = add_table_translation(after_para, translator, language)
+        # for i in after_table:
+        #     item_translation['content'].append(i)
         new_data.append(item_translation)
     return new_data
 
@@ -704,14 +708,18 @@ def add_footer_translation(original_data, translator, language):
         item_translation = {
             'type': item['type'],
             'index': item['index'],
-            'element_index': item['element_index'],
-            'flag': item['flag'],
-            'content': []
+            'section_index': item['section_index'],
+            "is_linked_to_previous": item['is_linked_to_previous'],
+            "is_different_first_page": item['is_different_first_page'],
+            "is_different_odd_and_even": item['is_different_odd_and_even'],
+            "first_page_footer_content": add_table_translation(add_paragraph_translation(item['first_page_footer_content'], translator, language), translator, language),
+            'odd_page_footer': add_table_translation(add_paragraph_translation(item['odd_page_footer'], translator, language), translator, language),
+            'even_page_footer': add_table_translation(add_paragraph_translation(item['even_page_footer'], translator, language), translator, language)
         }
-        after_para = add_paragraph_translation(item['content'], translator, language)
-        after_table = add_table_translation(after_para, translator, language)
-        for i in after_table:
-            item_translation['content'].append(i)
+        # after_para = add_paragraph_translation(item['content'], translator, language)
+        # after_table = add_table_translation(after_para, translator, language)
+        # for i in after_table:
+        #     item_translation['content'].append(i)
         new_data.append(item_translation)
     return new_data
 
