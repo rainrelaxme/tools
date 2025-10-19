@@ -1,17 +1,86 @@
 from docx import Document
 import json
+from docx.oxml import OxmlElement
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
+
+def table_line():
+    doc = Document()
+
+    # 创建3行1列的表格
+    table = doc.add_table(rows=3, cols=1)
+    table_rows = table.rows
+
+    # 设置各单元格样式
+    for row_id, row in enumerate(table.rows):
+        if row_id == 0:  # 首行
+            for cell in row.cells:
+                set_cell_border(
+                    cell,
+                    top={"sz": 16, "val": "single", "color": "#000000"},  # 上边框加粗
+                    bottom={"sz": 12, "val": "none"},  # 底边无边框
+                    insideH={"sz": 12, "val": "single", "color": "#FFFFFF"}  # 隐藏内部线
+                )
+        elif row_id == 1:  # 中间行
+            for cell in row.cells:
+                set_cell_border(
+                    cell,
+                    top={"sz": 12, "val": "none"},
+                    bottom={"sz": 12, "val": "single"},
+                    insideH={"sz": 12, "val": "single", "color": "#FFFFFF"}
+                )
+        else:  # 末行
+            for cell in row.cells:
+                set_cell_border(
+                    cell,
+                    top={"sz": 12, "val": "none"},
+                    bottom={"sz": 16, "val": "single", "color": "#000000"},  # 下边框加粗
+                    insideH={"sz": 12, "val": "single", "color": "#FFFFFF"}
+                )
+    doc.save('test.docx')
+
+def set_cell_border(cell, **kwargs):
+    tc = cell._tc
+    tcPr = tc.get_or_add_tcPr()
+    tcBorders = tcPr.first_child_found_in("w:tcBorders")
+
+    if tcBorders is None:
+        tcBorders = OxmlElement('w:tcBorders')
+        tcPr.append(tcBorders)
+
+    for edge in ('start', 'top', 'end', 'bottom', 'insideH', 'insideV'):
+        edge_data = kwargs.get(edge)
+        if edge_data:
+            tag = f'w:{edge}'
+            element = tcBorders.find(qn(tag))
+            if element is None:
+                element = OxmlElement(tag)
+                tcBorders.append(element)
+
+            for key in ["sz", "val", "color", "space", "shadow"]:
+                if key in edge_data:
+                    element.set(qn(f'w:{key}'), str(edge_data[key]))
 
 
 if __name__ == '__main__':
     print("***********test************")
-    # !/usr/bin/python
+    import win32com.client as win32
+    from win32com.client import constants
+    import os
 
-    aList = [123, 'xyz', 'zara', 'abc', 123];
-    bList = [2009, 'manni'];
-    aList.extend(bList)
+    doc_app = win32.gencache.EnsureDispatch('Word.Application')  # 打开word应用程序
+    doc_app.Visible = True
 
-    print("Extended List : ", aList)
+    doc = doc_app.Documents.Add()
+    footer = doc.Sections(1).Footers(constants.wdHeaderFooterPrimary)
+    footer.Range.Text = ""
+    footer = doc.Sections(1).Footers(constants.wdHeaderFooterPrimary)
+    footer.LinkToPrevious = False
+    footer_rng = footer.Range
+    footer_rng.Text = "自动插入页码 "
+    footer.PageNumbers.Add(PageNumberAlignment=constants.wdAlignPageNumberRight, FirstPage=True)
 
+    # doc.Save('test.docx')
 
 def extract_header_footer_content(docx_path):
     """
@@ -177,6 +246,5 @@ def get_footer_content(doc):
                         'cols': len(table.columns),
                     }
                     data.append(table_data)
-
 
 

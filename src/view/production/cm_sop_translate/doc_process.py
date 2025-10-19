@@ -8,15 +8,15 @@
 @Date   : 2025/9/24 02:00
 @Info   : 实现word文档的翻译，包括段落、表格，并将翻译后的文本置于原文本后，且保持原文档格式。其中doc转换为doc利用了win32包，仅支持在windows系统。
 """
-
+import datetime
+import os
 from docx import Document
 from docx.enum.section import WD_ORIENTATION
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.shared import RGBColor, Pt, Inches, Cm
 from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_BREAK
 from docx.oxml.ns import qn
-import datetime
-import os
+from docx.oxml import OxmlElement
 from win32com import client as wc
 
 from src.view.production.cm_sop_translate.template import apply_cover_template, apply_preamble_format, \
@@ -346,9 +346,6 @@ class DocumentContent:
                 item['flag'] = 'approve'
         return content_data
 
-class GenDocument:
-    pass
-
 
 def set_paper_size_format(doc):
     """
@@ -371,6 +368,59 @@ def set_paper_size_format(doc):
     section.right_margin = Cm(2)  # 右边距
 
 
+def add_cover(doc, data):
+    """添加封面"""
+    for item in data:
+        if item['type'] == 'paragraph':
+            # 创建新段落
+            paragraph = doc.add_paragraph()
+
+            # 应用文件头信息格式
+            if item['flag'] == 'preamble':
+                apply_preamble_format(paragraph, item)
+            else:
+                # 应用段落格式
+                apply_paragraph_format(paragraph, item['para_format'])
+                # 应用运行文本、格式
+                for run_data in item['runs']:
+                    run = paragraph.add_run(run_data['text'])
+                    apply_run_format(run, run_data)
+        if item['type'] == 'table':
+            table = doc.add_table(rows=len(item['rows']), cols=item['cols'])
+            table.style = 'Table Grid'
+
+            # 设置审批表格样式
+            if item['flag'] == 'approve':
+                apply_approveTable_format(table)
+
+            # 设置表格样式
+            apply_table_format(table, item)
+
+            # 应用表格内容
+            for row_idx, row_data in enumerate(item['rows']):
+                for cell_idx, cell_data in enumerate(row_data['cells']):
+                    if (cell_data['grid_span'] > 1 and cell_data['is_merge_start']) or cell_data['grid_span'] == 1:
+                        cell = table.rows[row_idx].cells[cell_idx]
+
+                        # 清空默认段落
+                        for paragraph in cell.paragraphs:
+                            p = paragraph._element
+                            p.getparent().remove(p)
+
+                        # 添加内容到单元格
+                        if cell_data['paragraphs']:
+                            for para_data in cell_data['paragraphs']:
+                                cell_para = cell.add_paragraph()
+                                apply_paragraph_format(cell_para, para_data['para_format'])
+
+                                for run_data in para_data['runs']:
+                                    run = cell_para.add_run(run_data['text'])
+                                    apply_run_format(run, run_data)
+                        else:
+                            # 如果没有详细的段落信息，只添加文本
+                            cell.text = cell_data['text']
+
+
 def add_content(block, data):
     """对块（doc、section、header、footer）中添加内容"""
     for index, item in enumerate(data):
@@ -391,7 +441,7 @@ def add_content(block, data):
         if item['type'] == 'table':
             # 创建表格
             # # 在表格前添加分页符
-            if item['element_index'] > 1:
+            if item['element_index'] >= 0:
                 page_break_para = block.add_paragraph()
                 run = page_break_para.add_run()
                 run.add_break(WD_BREAK.PAGE)
@@ -574,13 +624,15 @@ def apply_table_format(table, table_format_info):
     table.alignment = table_format_info['table_alignment']
 
     # 单元格样式
-    for row in table_format_info['rows']:
+    for index, row in enumerate(table_format_info['rows']):
+        table.rows[index].height = Cm(1)
         for cell in row['cells']:
             row = cell['row']
             col = cell['col']
             # 设置表格宽度
-            if hasattr(cell, 'width'):
+            if cell.get("width"):
                 table.cell(row, col).width = Inches(cell['width'])
+            table.cell(row, col).height = Cm(1.3)
 
             # 合并单元格
             if cell['is_merge_start']:

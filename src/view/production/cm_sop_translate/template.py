@@ -11,10 +11,12 @@
 import datetime
 import json
 import os
-
+import win32com.client as wc
+from win32com.client import constants
 from docx import Document
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_TAB_ALIGNMENT, WD_LINE_SPACING, WD_PARAGRAPH_ALIGNMENT, WD_ALIGN_PARAGRAPH, WD_BREAK
+from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, Cm, RGBColor
 
@@ -79,6 +81,12 @@ def apply_footer_template(doc, footer_data):
         if item['odd_page_footer']:
             add_content(section.footer, item['odd_page_footer'])
     return True
+
+
+def set_page_no():
+    """设置页面的页码"""
+    doc_app = wc.gencache.EnsureDispatch('Word.Application')
+    doc_app.Visible = False
 
 
 def apply_cover_template(cover_data=None):
@@ -259,8 +267,11 @@ def apply_approveTable_format(table):
     """
     for i in range(len(table.rows)):
         table.rows[i].height = Cm(2.5)
-    for i in range(len(table.columns)):
-        table.columns[i].width = Cm(2.5)
+    table.cell(0, 0).width = Cm(2.5)
+    table.cell(0, 1).width = Cm(2.5)
+    table.cell(0, 2).width = Cm(2.5)
+    # for i in range(len(table.columns)):
+    #     table.columns[i].width = Cm(2.5)
 
 
 def apply_header_format(doc, header_data):
@@ -286,14 +297,20 @@ def apply_header_format(doc, header_data):
     first_run1.font.size = Pt(22.0)
     first_run1.font.name = 'Times New Roman'  # 设置西文字体
     first_run1.element.rPr.rFonts.set(qn('w:eastAsia'), u'宋体')  # 设置中文字体
-    # 空行
-    first_para2 = section.first_page_header.add_paragraph()
-    first_para2.paragraph_format.space_after = 0
-    # border = first_para2.paragraph_format.border
-    # border.bottom.color = None
-    # border.bottom.line_style = 1
-    # border.bottom.size = Pt(1)
-    first_para2.add_run().font.size = Pt(22.0)
+    # 横线
+    first_table1 = section.first_page_header.add_table(rows=1, cols=1, width=Cm(18))
+    first_table1.style = "Table Grid"
+    first_table1.autofit = False
+    first_table1.alignment = WD_TAB_ALIGNMENT.CENTER
+
+    first_cell = first_table1.cell(0, 0)
+    set_cell_border(
+        first_cell,
+        start={"sz": 12, "val": "none"},
+        end={"sz": 12, "val": "none"},
+        top={"sz": 12, "val": "none"},
+        bottom={"sz": 5, "val": "single", "color": "#000000"},
+    )
 
     # 非首页页眉
     # 先清除内容
@@ -313,111 +330,74 @@ def apply_header_format(doc, header_data):
     table = section.header.add_table(rows=2, cols=5, width=section.page_width)
     table.style = "Table Grid"
     table.autofit = False
-    table.align = WD_TAB_ALIGNMENT.CENTER
-
+    table.alignment = WD_TAB_ALIGNMENT.CENTER
+    for item in header_data[0]["odd_page_header"]:
+        # 页眉的表格
+        if item["type"] == "table":
+            for row in item["rows"]:
+                for cell in row["cells"]:
+                    new_cell = table.cell(cell["row"], cell["col"])
+                    # 先清除段落内容
+                    for para in new_cell.paragraphs:
+                        p = para._element
+                        p.getparent().remove(p)
+                    new_cell.width = Inches(cell["width"])
+                    for para in cell["paragraphs"]:
+                        new_para = new_cell.add_paragraph()
+                        run = new_para.add_run(para["text"])
+                        run.font.size = Pt(12.0)
+                        run.font.name = 'Times New Roman'
+                        run.element.rPr.rFonts.set(qn('w:eastAsia'), u'宋体')
     # 1-1
-    cell_1_1 = table.cell(0, 0)
-    for para in cell_1_1.paragraphs:
-        p = para._element
-        p.getparent().remove(p)
-    cell_1_1.width = Cm(6.65)
-    cell_1_1.add_paragraph(HEADER_FORMAT["filename_title_zh"])
-    cell_1_1.add_paragraph(HEADER_FORMAT["filename_title_en"])
-    cell_1_1.add_paragraph(HEADER_FORMAT["filename_title_vi"])
-
+    set_cell_border(
+        table.cell(0, 0),
+        bottom={"sz": 12, "val": "none"},  # 底边无边框
+    )
     # 1-2
-    cell_1_2 = table.cell(0, 1)
-    for para in cell_1_2.paragraphs:
-        p = para._element
-        p.getparent().remove(p)
-    cell_1_2.width = Cm(3.13)
-    cell_1_2.add_paragraph(HEADER_FORMAT["fileNo_title_zh"])
-    cell_1_2.add_paragraph(HEADER_FORMAT["fileNo_title_en"])
-    cell_1_2.add_paragraph(HEADER_FORMAT["fileNo_title_vi"])
-
+    set_cell_border(
+        table.cell(0, 1),
+        end={"sz": 12, "val": "none"},
+    )
     # 1-3
-    cell_1_3 = table.cell(0, 2)
-    for para in cell_1_3.paragraphs:
-        p = para._element
-        p.getparent().remove(p)
-    cell_1_3.width = Cm(3.75)
-    cell_1_3.add_paragraph(HEADER_FORMAT["fileNo_zh"])
-    cell_1_3.add_paragraph(HEADER_FORMAT["fileNo_en"])
-    cell_1_3.add_paragraph(HEADER_FORMAT["fileNo_vi"])
-
+    set_cell_border(
+        table.cell(0, 2),
+        start={"sz": 12, "val": "none"},  # 底边无边框
+    )
     # 1-4
-    cell_1_4 = table.cell(0, 3)
-    for para in cell_1_4.paragraphs:
-        p = para._element
-        p.getparent().remove(p)
-    cell_1_4.width = Cm(1.92)
-    cell_1_4.add_paragraph(HEADER_FORMAT["ver_title_zh"])
-    cell_1_4.add_paragraph(HEADER_FORMAT["ver_title_en"])
-    cell_1_4.add_paragraph(HEADER_FORMAT["ver_title_vi"])
-
+    set_cell_border(
+        table.cell(0, 3),
+        end={"sz": 12, "val": "none"},
+    )
     # 1-5
-    cell_1_5 = table.cell(0, 4)
-    for para in cell_1_5.paragraphs:
-        p = para._element
-        p.getparent().remove(p)
-    cell_1_5.width = Cm(2.55)
-    cell_1_5.add_paragraph(HEADER_FORMAT["ver_zh"])
-    cell_1_5.add_paragraph(HEADER_FORMAT["ver_en"])
-    cell_1_5.add_paragraph(HEADER_FORMAT["ver_vi"])
-
+    set_cell_border(
+        table.cell(0, 4),
+        start={"sz": 12, "val": "none"},
+    )
     # 2-1
-    cell_2_1 = table.cell(1, 0)
-    for para in cell_2_1.paragraphs:
-        p = para._element
-        p.getparent().remove(p)
-    cell_2_1.width = Cm(6.65)
-    cell_2_1.add_paragraph(HEADER_FORMAT["filename_zh"])
-    cell_2_1.add_paragraph(HEADER_FORMAT["filename_en"])
-    cell_2_1.add_paragraph(HEADER_FORMAT["filename_vi"])
-
+    set_cell_border(
+        table.cell(1, 0),
+        top={"sz": 12, "val": "none"},
+    )
     # 2-2
-    cell_2_2 = table.cell(1, 1)
-    for para in cell_2_2.paragraphs:
-        p = para._element
-        p.getparent().remove(p)
-    cell_2_2.width = Cm(3.13)
-    cell_2_2.add_paragraph(HEADER_FORMAT["filetype_title_zh"])
-    cell_2_2.add_paragraph(HEADER_FORMAT["filetype_title_en"])
-    cell_2_2.add_paragraph(HEADER_FORMAT["filetype_title_vi"])
-
+    set_cell_border(
+        table.cell(1, 1),
+        end={"sz": 12, "val": "none"},
+    )
     # 2-3
-    cell_2_3 = table.cell(1, 2)
-    for para in cell_2_3.paragraphs:
-        p = para._element
-        p.getparent().remove(p)
-    cell_2_3.width = Cm(3.75)
-    cell_2_3.add_paragraph(HEADER_FORMAT["filetype_zh"])
-    cell_2_3.add_paragraph(HEADER_FORMAT["filetype_en"])
-    cell_2_3.add_paragraph(HEADER_FORMAT["filetype_vi"])
-
+    set_cell_border(
+        table.cell(1, 2),
+        start={"sz": 12, "val": "none"},
+    )
     # 2-4
-    cell_2_4 = table.cell(1, 3)
-    for para in cell_2_4.paragraphs:
-        p = para._element
-        p.getparent().remove(p)
-    cell_2_4.width = Cm(1.92)
-    cell_2_4.add_paragraph(HEADER_FORMAT["page_title_zh"])
-    cell_2_4.add_paragraph(HEADER_FORMAT["page_title_en"])
-    cell_2_4.add_paragraph(HEADER_FORMAT["page_title_vi"])
-
+    set_cell_border(
+        table.cell(1, 3),
+        end={"sz": 12, "val": "none"},
+    )
     # 2-5
-    cell_2_5 = table.cell(1, 4)
-    for para in cell_2_5.paragraphs:
-        p = para._element
-        p.getparent().remove(p)
-    cell_2_5.width = Cm(2.55)
-    cell_2_5.add_paragraph(HEADER_FORMAT["page_zh"])
-    cell_2_5.add_paragraph(HEADER_FORMAT["page_en"])
-    cell_2_5.add_paragraph(HEADER_FORMAT["page_vi"])
-
-
-
-
+    set_cell_border(
+        table.cell(1, 4),
+        start={"sz": 12, "val": "none"},
+    )
 
 
 def apply_footer_format(doc, footer_data):
@@ -630,9 +610,32 @@ def add_content(block, data):
         #                     # 如果没有详细的段落信息，只添加文本
         #                     cell.text = cell_data['text']
 
+
+def set_cell_border(cell, **kwargs):
+    tc = cell._tc
+    tcPr = tc.get_or_add_tcPr()
+    tcBorders = tcPr.first_child_found_in("w:tcBorders")
+
+    if tcBorders is None:
+        tcBorders = OxmlElement('w:tcBorders')
+        tcPr.append(tcBorders)
+
+    for edge in ('start', 'top', 'end', 'bottom', 'insideH', 'insideV'):
+        edge_data = kwargs.get(edge)
+        if edge_data:
+            tag = f'w:{edge}'
+            element = tcBorders.find(qn(tag))
+            if element is None:
+                element = OxmlElement(tag)
+                tcBorders.append(element)
+
+            for key in ["sz", "val", "color", "space", "shadow"]:
+                if key in edge_data:
+                    element.set(qn(f'w:{key}'), str(edge_data[key]))
+
 def main(data):
     current_time = datetime.datetime.now().strftime('%y%m%d%H%M%S')
-    file_path = r"D:\Code\Project\tools\data\temp"
+    file_path = r"F:\Code\Project\tools\data\temp"
     file = os.path.join(file_path, f'test_{current_time}.docx')
 
     doc = Document()
@@ -658,7 +661,7 @@ if __name__ == '__main__':
     #     # first_footer.paragraphs[0].font.bold = True
     #     # first_footer.paragraphs[0].add_run().font.size = Pt(36.0)
     #     first_footer.paragraphs[0].alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-    file = r"D:\Code\Project\tools\data\data.json"
+    file = r"F:\Code\Project\tools\data\data.json"
     with open(file, 'r', encoding='utf-8') as f:
         data = json.load(f)
     main(data)
