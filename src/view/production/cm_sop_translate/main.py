@@ -16,7 +16,7 @@ from docx import Document
 
 from src.view.production.cm_sop_translate.doc_process import doc_to_docx, DocumentContent, set_paper_size_format, \
     add_content, add_cover_translation, add_paragraph_translation
-from src.view.production.cm_sop_translate.template import apply_footer_format, apply_header_format
+from src.view.production.cm_sop_translate.template import apply_footer_template, apply_header_template
 from src.view.production.cm_sop_translate.translator import Translator
 
 
@@ -105,8 +105,8 @@ def create_new_document(data, output_path):
     set_paper_size_format(doc)
 
     try:
-        apply_header_format(doc, data['header'])
-        apply_footer_format(doc, data['footer'])
+        apply_header_template(doc, data['header'])
+        apply_footer_template(doc, data['footer'])
 
         content_data = data['cover'] + data['body']
         add_content(doc, content_data)

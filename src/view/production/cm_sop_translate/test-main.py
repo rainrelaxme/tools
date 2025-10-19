@@ -17,8 +17,7 @@ from src.view.production.cm_sop_translate.doc_process import DocumentContent, ad
     add_paragraph_translation, \
     add_table_translation, add_header_translation, add_footer_translation
 from src.view.production.cm_sop_translate.main import create_new_document
-from src.view.production.cm_sop_translate.template import apply_cover_template, apply_template, apply_footer_format, \
-    main
+from src.view.production.cm_sop_translate.template import apply_cover_template, apply_template
 from src.view.production.cm_sop_translate.translator import Translator
 
 if __name__ == "__main__":
@@ -26,8 +25,8 @@ if __name__ == "__main__":
     current_time = datetime.datetime.now().strftime('%y%m%d%H%M%S')
     language = ['英语', '越南语']
 
-    input_file = r"F:\Code\Project\tools\data\test\test.docx"
-    output_folder = r"F:\Code\Project\tools\data\temp"
+    input_file = r"D:\Code\Project\tools\data\test\test.docx"
+    output_folder = r"D:\Code\Project\tools\data\temp"
     file_base_name = os.path.basename(input_file)
     output_file = output_folder + "/" + file_base_name.replace(".docx", f"_translate_{current_time}.docx")
 
@@ -36,7 +35,7 @@ if __name__ == "__main__":
     # 1. 读取原文档内容
     doc = Document(input_file)
     new_doc = DocumentContent(doc)
-    # 正文主题
+    # 正文主体
     content_data = new_doc.get_content(doc)
     # 页眉、页脚
     header_data = new_doc.get_header_content(doc)

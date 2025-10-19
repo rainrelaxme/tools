@@ -431,14 +431,62 @@ def add_content(block, data):
                             cell.text = cell_data['text']
 
 
-def add_header(doc):
-    """添加页眉"""
-    pass
+def add_header(doc, header_data):
+    """
+    添加页眉
+    首页：first_page_header
+    奇数页：header
+    偶数页：even_page_header
+    是否链接到前一节： is_linked_to_previous
+    是否首页不同：different_first_page_header_footer
+    是否奇偶页不同：doc.settings.odd_and_even_pages_header_footer
+    """
+    for index, item in enumerate(header_data):
+        # 创建节
+        section = doc.sections[item['section_index']]
+        # 是否链接到前一节
+        section.header.is_linked_to_previous = item['is_linked_to_previous']
+        # 设置奇偶页是否相同
+        doc.settings.odd_and_even_pages_header_footer = item['is_different_odd_and_even']
+        # 设置首页是否相同
+        section.different_first_page_header_footer = item['is_different_first_page']
+
+        # 填充内容
+        if item['first_page_header_content']:
+            add_content(section.first_page_header, item['first_page_header_content'])
+        if item['odd_page_header']:
+            add_content(section.header, item['odd_page_header'])
+        if item['even_page_header']:
+            add_content(section.even_page_header, item['even_page_header'])
 
 
-def add_footer(doc):
-    """添加页脚"""
-    pass
+def add_footer(doc, footer_data):
+    """
+    添加页脚
+    首页：first_page_footer
+    奇数页：footer
+    偶数页：even_page_footer
+    是否链接到前一节： is_linked_to_previous
+    是否首页不同：different_first_page_header_footer
+    是否奇偶页不同：doc.settings.odd_and_even_pages_header_footer
+    """
+    for index, item in enumerate(footer_data):
+        # 创建节
+        section = doc.sections[item['section_index']]
+        # 是否链接到前一节
+        section.header.is_linked_to_previous = item['is_linked_to_previous']
+        # 设置奇偶页是否相同
+        doc.settings.odd_and_even_pages_header_footer = item['is_different_odd_and_even']
+        # 设置首页页脚不同
+        section.different_first_page_header_footer = item['is_different_first_page']
+
+        # 填充内容
+        if item['first_page_footer_content']:
+            add_content(section.first_page_footer, item['first_page_footer_content'])
+        if item['odd_page_footer']:
+            add_content(section.footer, item['odd_page_footer'])
+        if item['even_page_footer']:
+            add_content(section.even_page_header, item['even_page_footer'])
 
 
 def apply_paragraph_format(paragraph, format_info):

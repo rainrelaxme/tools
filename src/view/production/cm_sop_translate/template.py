@@ -18,38 +18,67 @@ from docx.enum.text import WD_TAB_ALIGNMENT, WD_LINE_SPACING, WD_PARAGRAPH_ALIGN
 from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, Cm, RGBColor
 
+from config.template_content import FOOTER_FORMAT, HEADER_FORMAT
+
 
 def apply_template(body_data, header_data=None, footer_data=None, cover_data=None):
     """应用模板内容，修改data"""
-    after_header = apply_header_template(header_data)
-    after_footer = apply_footer_template(footer_data)
+    # after_header = apply_header_template(header_data)
+    # after_footer = apply_footer_template(footer_data)
     after_cover = apply_cover_template(cover_data)
     new_data = {
-        "header": after_header,
-        "footer": after_footer,
+        "header": header_data,
+        "footer": footer_data,
         "cover": after_cover,
         "body": body_data,
     }
     return new_data
 
 
-def apply_header_template(header_data=None):
+def apply_header_template(doc, header_data):
     """应用页眉模板，修改data"""
     # 如果没有此内容，则不应用模板。
     if header_data is None:
         return None
 
-    # start
-    return header_data
+    # 设置奇偶页是否相同
+    doc.settings.odd_and_even_pages_header_footer = False
+
+    for index, item in enumerate(header_data):
+        # 创建节
+        section = doc.sections[item['section_index']]
+
+        # 设置首页是否相同
+        section.different_first_page_header_footer = True
+        # 填充内容
+        if item['first_page_header_content']:
+            add_content(section.first_page_header, item['first_page_header_content'])
+        if item['odd_page_header']:
+            add_content(section.header, item['odd_page_header'])
+    return True
 
 
-def apply_footer_template(footer_data=None):
+def apply_footer_template(doc, footer_data):
     """应用页眉模板，修改data"""
     # 如果没有此内容，则不应用模板。
     if footer_data is None:
         return None
-    # start
-    return footer_data
+
+    # 设置奇偶页是否相同
+    doc.settings.odd_and_even_pages_header_footer = False
+
+    for index, item in enumerate(footer_data):
+        # 创建节
+        section = doc.sections[item['section_index']]
+
+        # 设置首页页脚不同
+        section.different_first_page_header_footer = True
+        # 填充内容
+        if item['first_page_footer_content']:
+            add_content(section.first_page_footer, item['first_page_footer_content'])
+        if item['odd_page_footer']:
+            add_content(section.footer, item['odd_page_footer'])
+    return True
 
 
 def apply_cover_template(cover_data=None):
@@ -239,35 +268,217 @@ def apply_header_format(doc, header_data):
     # 设置奇偶页是否相同
     doc.settings.odd_and_even_pages_header_footer = False
 
-    for index, item in enumerate(header_data):
-        # 创建节
-        section = doc.sections[item['section_index']]
+    # 创建节
+    section = doc.sections[0]
+    # 设置首页不同
+    section.different_first_page_header_footer = True
 
-        # 设置首页是否相同
-        section.different_first_page_header_footer = True
-        # 填充内容
-        if item['first_page_header_content']:
-            add_content(section.first_page_header, item['first_page_header_content'])
-        if item['odd_page_header']:
-            add_content(section.header, item['odd_page_header'])
+    # 首页页眉
+    # 先清除内容
+    for para in section.first_page_header.paragraphs:
+        p = para._element
+        p.getparent().remove(p)
+    # 内容
+    first_para1 = section.first_page_header.add_paragraph()
+    first_para1.alignment = WD_PARAGRAPH_ALIGNMENT.RIGHT
+    first_para1.paragraph_format.space_after = 0
+    first_run1 = first_para1.add_run(HEADER_FORMAT["tag"])
+    first_run1.font.size = Pt(22.0)
+    first_run1.font.name = 'Times New Roman'  # 设置西文字体
+    first_run1.element.rPr.rFonts.set(qn('w:eastAsia'), u'宋体')  # 设置中文字体
+    # 空行
+    first_para2 = section.first_page_header.add_paragraph()
+    first_para2.paragraph_format.space_after = 0
+    # border = first_para2.paragraph_format.border
+    # border.bottom.color = None
+    # border.bottom.line_style = 1
+    # border.bottom.size = Pt(1)
+    first_para2.add_run().font.size = Pt(22.0)
+
+    # 非首页页眉
+    # 先清除内容
+    for para in section.header.paragraphs:
+        p = para._element
+        p.getparent().remove(p)
+    # 内容
+    para1 = section.header.add_paragraph()
+    para1.alignment = WD_PARAGRAPH_ALIGNMENT.RIGHT
+    para1.paragraph_format.space_after = 0
+    run1 = para1.add_run(HEADER_FORMAT["tag"])
+    run1.font.size = Pt(18.0)
+    run1.font.name = 'Times New Roman'  # 设置西文字体
+    run1.element.rPr.rFonts.set(qn('w:eastAsia'), u'宋体')  # 设置中文字体
+
+    # 表格
+    table = section.header.add_table(rows=2, cols=5, width=section.page_width)
+    table.style = "Table Grid"
+    table.autofit = False
+    table.align = WD_TAB_ALIGNMENT.CENTER
+
+    # 1-1
+    cell_1_1 = table.cell(0, 0)
+    for para in cell_1_1.paragraphs:
+        p = para._element
+        p.getparent().remove(p)
+    cell_1_1.width = Cm(6.65)
+    cell_1_1.add_paragraph(HEADER_FORMAT["filename_title_zh"])
+    cell_1_1.add_paragraph(HEADER_FORMAT["filename_title_en"])
+    cell_1_1.add_paragraph(HEADER_FORMAT["filename_title_vi"])
+
+    # 1-2
+    cell_1_2 = table.cell(0, 1)
+    for para in cell_1_2.paragraphs:
+        p = para._element
+        p.getparent().remove(p)
+    cell_1_2.width = Cm(3.13)
+    cell_1_2.add_paragraph(HEADER_FORMAT["fileNo_title_zh"])
+    cell_1_2.add_paragraph(HEADER_FORMAT["fileNo_title_en"])
+    cell_1_2.add_paragraph(HEADER_FORMAT["fileNo_title_vi"])
+
+    # 1-3
+    cell_1_3 = table.cell(0, 2)
+    for para in cell_1_3.paragraphs:
+        p = para._element
+        p.getparent().remove(p)
+    cell_1_3.width = Cm(3.75)
+    cell_1_3.add_paragraph(HEADER_FORMAT["fileNo_zh"])
+    cell_1_3.add_paragraph(HEADER_FORMAT["fileNo_en"])
+    cell_1_3.add_paragraph(HEADER_FORMAT["fileNo_vi"])
+
+    # 1-4
+    cell_1_4 = table.cell(0, 3)
+    for para in cell_1_4.paragraphs:
+        p = para._element
+        p.getparent().remove(p)
+    cell_1_4.width = Cm(1.92)
+    cell_1_4.add_paragraph(HEADER_FORMAT["ver_title_zh"])
+    cell_1_4.add_paragraph(HEADER_FORMAT["ver_title_en"])
+    cell_1_4.add_paragraph(HEADER_FORMAT["ver_title_vi"])
+
+    # 1-5
+    cell_1_5 = table.cell(0, 4)
+    for para in cell_1_5.paragraphs:
+        p = para._element
+        p.getparent().remove(p)
+    cell_1_5.width = Cm(2.55)
+    cell_1_5.add_paragraph(HEADER_FORMAT["ver_zh"])
+    cell_1_5.add_paragraph(HEADER_FORMAT["ver_en"])
+    cell_1_5.add_paragraph(HEADER_FORMAT["ver_vi"])
+
+    # 2-1
+    cell_2_1 = table.cell(1, 0)
+    for para in cell_2_1.paragraphs:
+        p = para._element
+        p.getparent().remove(p)
+    cell_2_1.width = Cm(6.65)
+    cell_2_1.add_paragraph(HEADER_FORMAT["filename_zh"])
+    cell_2_1.add_paragraph(HEADER_FORMAT["filename_en"])
+    cell_2_1.add_paragraph(HEADER_FORMAT["filename_vi"])
+
+    # 2-2
+    cell_2_2 = table.cell(1, 1)
+    for para in cell_2_2.paragraphs:
+        p = para._element
+        p.getparent().remove(p)
+    cell_2_2.width = Cm(3.13)
+    cell_2_2.add_paragraph(HEADER_FORMAT["filetype_title_zh"])
+    cell_2_2.add_paragraph(HEADER_FORMAT["filetype_title_en"])
+    cell_2_2.add_paragraph(HEADER_FORMAT["filetype_title_vi"])
+
+    # 2-3
+    cell_2_3 = table.cell(1, 2)
+    for para in cell_2_3.paragraphs:
+        p = para._element
+        p.getparent().remove(p)
+    cell_2_3.width = Cm(3.75)
+    cell_2_3.add_paragraph(HEADER_FORMAT["filetype_zh"])
+    cell_2_3.add_paragraph(HEADER_FORMAT["filetype_en"])
+    cell_2_3.add_paragraph(HEADER_FORMAT["filetype_vi"])
+
+    # 2-4
+    cell_2_4 = table.cell(1, 3)
+    for para in cell_2_4.paragraphs:
+        p = para._element
+        p.getparent().remove(p)
+    cell_2_4.width = Cm(1.92)
+    cell_2_4.add_paragraph(HEADER_FORMAT["page_title_zh"])
+    cell_2_4.add_paragraph(HEADER_FORMAT["page_title_en"])
+    cell_2_4.add_paragraph(HEADER_FORMAT["page_title_vi"])
+
+    # 2-5
+    cell_2_5 = table.cell(1, 4)
+    for para in cell_2_5.paragraphs:
+        p = para._element
+        p.getparent().remove(p)
+    cell_2_5.width = Cm(2.55)
+    cell_2_5.add_paragraph(HEADER_FORMAT["page_zh"])
+    cell_2_5.add_paragraph(HEADER_FORMAT["page_en"])
+    cell_2_5.add_paragraph(HEADER_FORMAT["page_vi"])
+
+
+
+
 
 
 def apply_footer_format(doc, footer_data):
     """应用页脚，生成的格式"""
     # 设置奇偶页是否相同
     doc.settings.odd_and_even_pages_header_footer = False
+    # 创建节
+    section = doc.sections[0]
+    # 设置首页页脚不同
+    section.different_first_page_header_footer = True
 
-    for index, item in enumerate(footer_data):
-        # 创建节
-        section = doc.sections[item['section_index']]
+    # 首页页脚
+    # 先清除内容
+    for para in section.first_page_footer.paragraphs:
+        p = para._element
+        p.getparent().remove(p)
+    # section.first_page_footer.add_paragraph().add_run()
 
-        # 设置首页页脚不同
-        section.different_first_page_header_footer = True
-        # 填充内容
-        if item['first_page_footer_content']:
-            add_content(section.first_page_footer, item['first_page_footer_content'])
-        if item['odd_page_footer']:
-            add_content(section.footer, item['odd_page_footer'])
+    # 非首页页脚
+    # 先清除内容
+    for para in section.footer.paragraphs:
+        p = para._element
+        p.getparent().remove(p)
+    # 第1行
+    para1 = section.footer.add_paragraph()
+    para1.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
+    para1.paragraph_format.space_after = 0
+    run1 = para1.add_run(FOOTER_FORMAT["para1"])
+    run1.font.size = Pt(10)
+    run1.font.name = 'Times New Roman'  # 设置西文字体
+    run1.element.rPr.rFonts.set(qn('w:eastAsia'), u'宋体')  # 设置中文字体
+
+    # 第2行
+    para2 = section.footer.add_paragraph()
+    para2.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
+    para2.paragraph_format.space_after = 0
+    run2 = para2.add_run(FOOTER_FORMAT["para2"])
+    run2.font.size = Pt(9)
+    run2.font.name = 'Times New Roman'  # 设置西文字体
+    run2.element.rPr.rFonts.set(qn('w:eastAsia'), u'宋体')  # 设置中文字体
+    run2.font.color.rgb = RGBColor(0xff, 0x00, 0x00)
+
+    # 第3行
+    para3 = section.footer.add_paragraph()
+    para3.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
+    para3.paragraph_format.space_after = 0
+    run3 = para3.add_run(FOOTER_FORMAT["para3"])
+    run3.font.size = Pt(9)
+    run3.font.name = 'Times New Roman'  # 设置西文字体
+    run3.element.rPr.rFonts.set(qn('w:eastAsia'), u'宋体')  # 设置中文字体
+    run3.font.color.rgb = RGBColor(0xff, 0x00, 0x00)
+
+    # 第4行
+    para4 = section.footer.add_paragraph()
+    para4.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
+    para4.paragraph_format.space_after = 0
+    run4 = para4.add_run(FOOTER_FORMAT["para4"])
+    run4.font.size = Pt(9)
+    run4.font.name = 'Times New Roman'  # 设置西文字体
+    run4.element.rPr.rFonts.set(qn('w:eastAsia'), u'宋体')  # 设置中文字体
+    run4.font.color.rgb = RGBColor(0xff, 0x00, 0x00)
 
 
 def apply_paragraph_format(paragraph, format_info):
@@ -426,7 +637,7 @@ def main(data):
 
     doc = Document()
     apply_footer_format(doc, data)
-    # apply_header_format(doc, header_data)
+    apply_header_format(doc, data)
 
     i = 1
     while i < 30:
