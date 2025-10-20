@@ -27,7 +27,5 @@ FOOTER_FORMAT = {
     "para1": "越南诚模精密科技有限公司  Vietnam CM Technology Co., Ltd   Công Ty TNHH Công Nghệ ChengMo",
     "para2": "如遇文件内容解读歧义，以中文版本内容为准；未经允许不得转载、复制或用作它途",
     "para3": "In case of any ambiguity in the interpretation of the contents of the documents, the Chinese version shall prevail; no reproduction, copying or use for other purposes without permission",
-    "para4": "Trong trường hợp có sự khác biệt về cách hiểu nội dung tài liệu, phiên bản tiếng Trung sẽ được ưu tiên. Không được phép tái bản, sao chép hoặc sử dụng cho mục đích khác khi chưa được cho phép.",
-    "para5": "",
-    "para6": ""
+    "para4": "Trong trường hợp có sự khác biệt về cách hiểu nội dung tài liệu, phiên bản tiếng Trung sẽ được ưu tiên. Không được phép tái bản, sao chép hoặc sử dụng cho mục đích khác khi chưa được cho phép."
 }

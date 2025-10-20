@@ -60,7 +60,6 @@ def docx_translate(language):
             output_filename = f"{file_base_name}_translate_{current_time}.docx"
             output_file = os.path.join(output_folder, output_filename)
 
-            translator = Translator()
             print(f"********************start at {current_time}********************")
             # 1. 读取原文档内容
             doc = Document(input_file)
@@ -83,7 +82,6 @@ def docx_translate(language):
             # ① 翻译封面
             translated_cover_data = add_cover_translation(data['cover_data'], translator, language)
             # ② 翻译正文内容
-            # after_para = add_paragraph_translation(data['body_data'], translator, language)
             translated_body_data = add_table_translation(
                 add_paragraph_translation(data['body_data'], translator, language), translator, language)
             # ③ 翻译页眉、页脚
@@ -111,8 +109,6 @@ def create_new_document(data, output_path):
     try:
         apply_header_format(doc, data['header'])
         apply_footer_format(doc, data['footer'])
-
-        # content_data = data['cover'] + data['body']
         add_cover(doc, data['cover'])
         add_content(doc, data['body'])
     except Exception as e:
@@ -156,7 +152,6 @@ if __name__ == '__main__':
                 sys.exit(0)
             else:
                 print("输入错误，请重新输入")
-
 
         except Exception as e:
             print(f"处理过程中出现错误: {e}")
