@@ -118,9 +118,12 @@ def apply_cover_template(cover_data=None):
         'index': None,
         'element_index': None,
         'flag': None,
-        'table_alignment': WD_TABLE_ALIGNMENT.CENTER,  # 表格居中，非内容居中
         'rows': None,
         'cols': None,
+        "table_format": {
+            "table_alignment": WD_TABLE_ALIGNMENT.CENTER,
+        },
+        "cells": []
     }
 
     # 1. 第一行空格
@@ -134,48 +137,73 @@ def apply_cover_template(cover_data=None):
     table_1['index'] = 1
     table_1['element_index'] = 0
     table_1['flag'] = 'top_title'
+    table_1['rows'] = 1
     table_1['cols'] = 1
-    rows = []
+    table_1["cells"] = []
+    cell = {
+        "row": 0,
+        "col": 0,
+        "width": "",
+        "grid_span": 1,
+        "is_merge_start": False,
+        "content": []
+    }
     for item in cover_data:
-        if item['flag'] == 'top_title':
-            row = {
-                'cells': [
-                    {
-                        'row': 0,
-                        'col': 0,
-                        'grid_span': 1,
-                        'is_merge_start': False,
-                        'text': item['text'],
-                        'paragraphs': [
-                            {
-                                'para_index': 0,
-                                'text': item['text'],
-                                'para_format': item['para_format'],
-                                'runs': item['runs'] if 'runs' in item else []
-                            }
-                        ]
-                    }
-                ]
+        if item["flag"] == 'top_title':
+            content = {
+                "type": "paragraph",
+                "index": 0,
+                "element_index": 0,
+                "flag": "",
+                "text": item["text"],
+                'para_format': item['para_format'],
+                'runs': item['runs'] if 'runs' in item else []
             }
-            rows.append(row)
-    new_rows = [
-        {
-            'cells': [
-                {
-                    'row': rows[0]['cells'][0]['row'],
-                    'col': rows[0]['cells'][0]['col'],
-                    'grid_span': rows[0]['cells'][0]['grid_span'],
-                    'is_merge_start': rows[0]['cells'][0]['is_merge_start'],
-                    'text': rows[0]['cells'][0]['text'],
-                    'paragraphs': []
-                }
+            cell['content'].append(content)
+    table_1["cells"].append(cell)
 
-            ]
-        }
-    ]
-    for item in rows:
-        new_rows[0]['cells'][0]['paragraphs'].append(item['cells'][0]['paragraphs'][0])
-    table_1['rows'] = new_rows
+
+    # rows = []
+    # for item in cover_data:
+    #     if item['flag'] == 'top_title':
+    #         row = {
+    #             'cells': [
+    #                 {
+    #                     'row': 0,
+    #                     'col': 0,
+    #                     'grid_span': 1,
+    #                     'is_merge_start': False,
+    #                     'text': item['text'],
+    #                     'content': [
+    #                         {
+    #                             'para_index': 0,
+    #                             'text': item['text'],
+    #                             'para_format': item['para_format'],
+    #                             'runs': item['runs'] if 'runs' in item else []
+    #                         }
+    #                     ]
+    #                 }
+    #             ]
+    #         }
+    #         rows.append(row)
+    # new_rows = [
+    #     {
+    #         'cells': [
+    #             {
+    #                 'row': rows[0]['cells'][0]['row'],
+    #                 'col': rows[0]['cells'][0]['col'],
+    #                 'grid_span': rows[0]['cells'][0]['grid_span'],
+    #                 'is_merge_start': rows[0]['cells'][0]['is_merge_start'],
+    #                 'text': rows[0]['cells'][0]['text'],
+    #                 'paragraphs': []
+    #             }
+    #
+    #         ]
+    #     }
+    # ]
+    # for item in rows:
+    #     new_rows[0]['cells'][0]['paragraphs'].append(item['cells'][0]['paragraphs'][0])
+    # table_1['rows'] = new_rows
     new_cover_data.append(table_1)
 
     # 3. 接空行
@@ -210,13 +238,18 @@ def apply_cover_template(cover_data=None):
 
     # 5. 审批表格
     for item in cover_data:
-        if item['type'] == 'table':
+        if item['type'] == 'table' and item['flag'] == 'approve':
             item['index'] = len(new_cover_data) + 1
             item['element_index'] = 1
-            for row in item['rows']:
-                for cell in row['cells']:
-                    for para in cell['paragraphs']:
-                        para['para_format']['line_spacing'] = Pt(20)
+            for cell in item["cells"]:
+                for para in cell["content"]:
+                    para["para_format"]["line_spacing"] = Pt(20)
+
+
+            # for row in item['rows']:
+            #     for cell in row['cells']:
+            #         for para in cell['content']:
+            #             para['para_format']['line_spacing'] = Pt(20)
             new_cover_data.append(item)
 
     return new_cover_data
@@ -267,9 +300,9 @@ def apply_approveTable_format(table):
     """
     for i in range(len(table.rows)):
         table.rows[i].height = Cm(2.5)
-    table.cell(0, 0).width = Cm(2.5)
-    table.cell(0, 1).width = Cm(2.5)
-    table.cell(0, 2).width = Cm(2.5)
+    table.cell(0, 0).width = Cm(3)
+    table.cell(0, 1).width = Cm(3)
+    table.cell(0, 2).width = Cm(3)
     # for i in range(len(table.columns)):
     #     table.columns[i].width = Cm(2.5)
 
@@ -334,20 +367,38 @@ def apply_header_format(doc, header_data):
     for item in header_data[0]["odd_page_header"]:
         # 页眉的表格
         if item["type"] == "table":
-            for row in item["rows"]:
-                for cell in row["cells"]:
-                    new_cell = table.cell(cell["row"], cell["col"])
-                    # 先清除段落内容
-                    for para in new_cell.paragraphs:
-                        p = para._element
-                        p.getparent().remove(p)
-                    new_cell.width = Inches(cell["width"])
-                    for para in cell["paragraphs"]:
-                        new_para = new_cell.add_paragraph()
-                        run = new_para.add_run(para["text"])
-                        run.font.size = Pt(12.0)
-                        run.font.name = 'Times New Roman'
-                        run.element.rPr.rFonts.set(qn('w:eastAsia'), u'宋体')
+            for cell in item["cells"]:
+                new_cell = table.cell(cell["row"], cell["col"])
+                # 先清除段落内容
+                for para in new_cell.paragraphs:
+                    p = para._element
+                    p.getparent().remove(p)
+                new_cell.width = Inches(cell["width"])
+                for para in cell["content"]:
+                    new_para = new_cell.add_paragraph()
+                    run = new_para.add_run(para["text"])
+                    run.font.size = Pt(12.0)
+                    run.font.name = 'Times New Roman'
+                    run.element.rPr.rFonts.set(qn('w:eastAsia'), u'宋体')
+                    if cell["row"] == 1 and cell["col"] == 0:
+                        new_para.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+
+
+
+            # for row in item["rows"]:
+            #     for cell in row["cells"]:
+            #         new_cell = table.cell(cell["row"], cell["col"])
+            #         # 先清除段落内容
+            #         for para in new_cell.paragraphs:
+            #             p = para._element
+            #             p.getparent().remove(p)
+            #         new_cell.width = Inches(cell["width"])
+            #         for para in cell["content"]:
+            #             new_para = new_cell.add_paragraph()
+            #             run = new_para.add_run(para["text"])
+            #             run.font.size = Pt(12.0)
+            #             run.font.name = 'Times New Roman'
+            #             run.element.rPr.rFonts.set(qn('w:eastAsia'), u'宋体')
     # 1-1
     set_cell_border(
         table.cell(0, 0),

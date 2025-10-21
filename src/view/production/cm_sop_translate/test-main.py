@@ -25,7 +25,7 @@ if __name__ == "__main__":
     current_time = datetime.datetime.now().strftime('%y%m%d%H%M%S')
     language = ['英语', '越南语']
 
-    input_file = r"D:\Code\Project\tools\data\test\14.docx"
+    input_file = r"D:\Code\Project\tools\data\test\13.docx"
 
     output_folder = r"D:\Code\Project\tools\data\temp"
     file_base_name = os.path.basename(input_file)
@@ -54,8 +54,8 @@ if __name__ == "__main__":
     # ① 翻译封面
     translated_cover_data = add_cover_translation(data['cover_data'], translator, language)
     # ② 翻译正文内容
-    # after_para = add_paragraph_translation(data['body_data'], translator, language)
-    translated_body_data = add_table_translation(add_paragraph_translation(data['body_data'], translator, language), translator, language)
+    after_para = add_paragraph_translation(data['body_data'], translator, language)
+    translated_body_data = add_table_translation(after_para, translator, language)
     # ③ 翻译页眉、页脚
     translated_header_data = add_header_translation(header_data, translator, language)
     translated_footer_data = add_footer_translation(footer_data, translator, language)

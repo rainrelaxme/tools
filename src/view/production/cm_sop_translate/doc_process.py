@@ -34,7 +34,46 @@ class DocumentContent:
         保持段落和表格在文档中的原始顺序
         """
         data = []
+        # 排序获取位置
+        all_elements = self.sort_element(doc)
 
+        # 按排序后的顺序处理元素
+        for element_type, position, index, text in all_elements:
+            if element_type == 'paragraph':
+                para = doc.paragraphs[index]
+                para_data = {
+                    'type': 'paragraph',
+                    'index': position,
+                    'element_index': index,
+                    'flag': '',
+                    'text': para.text,
+                    'para_format': self.get_paragraph_format(para),
+                    'runs': self.get_run_format(para)
+                }
+                data.append(para_data)
+
+            elif element_type == 'table':
+                table = doc.tables[index]
+                table_data = {
+                    'type': 'table',
+                    'index': position,
+                    'element_index': index,
+                    'flag': '',
+                    # 'table_alignment': WD_TABLE_ALIGNMENT.CENTER,  # 表格居中，非内容居中
+                    # 'rows': self.get_table_content(table),
+                    "rows": len(table.rows),
+                    'cols': len(table.columns),
+                    "table_format": {
+                        "table_alignment": WD_TABLE_ALIGNMENT.CENTER,
+                    },
+                    "cells": self.get_table_content(table)
+                }
+                data.append(table_data)
+
+        return data
+
+    def sort_element(self, doc):
+        """对元素进行排序"""
         # 先处理所有段落，记录它们在文档中的位置
         para_positions = {}
         for para_index, para in enumerate(doc.paragraphs):
@@ -68,48 +107,19 @@ class DocumentContent:
         # 按位置排序
         all_elements.sort(key=lambda x: x[1])
 
-        # 按排序后的顺序处理元素
-        for element_type, position, index, text in all_elements:
-            if element_type == 'paragraph':
-                para = doc.paragraphs[index]
-                para_data = {
-                    'type': 'paragraph',
-                    'index': position,
-                    'element_index': index,
-                    'flag': '',
-                    'text': para.text,
-                    'para_format': self.get_paragraph_format(para),
-                    'runs': self.get_run_format(para)
-                }
-                data.append(para_data)
-
-            elif element_type == 'table':
-                table = doc.tables[index]
-                table_data = {
-                    'type': 'table',
-                    'index': position,
-                    'element_index': index,
-                    'flag': '',
-                    'table_alignment': WD_TABLE_ALIGNMENT.CENTER,  # 表格居中，非内容居中
-                    'rows': self.get_table_content(table),
-                    'cols': len(table.columns),
-                }
-                data.append(table_data)
-
-        return data
+        return all_elements
 
     def get_table_content(self, table):
         """
         获取表格内容
         """
-        rows = []
+        # rows = []
         cells = []
         for row_index, row in enumerate(table.rows):
-            row_data = {'cells': []}
+            # row_data = {'cells': []}
             for cell_index, cell in enumerate(row.cells):
-
                 # 只能判断横向合并,还有种方法，通过合并的两个单元格相等判断
-                cells.append(cell)
+                # cells.append(cell)
                 grid_span = int(cell.grid_span) if cell.grid_span else 1  # 单元格的跨度，若是合并单元格则大于1
                 is_merge_start = False
                 if grid_span > 1:
@@ -123,33 +133,39 @@ class DocumentContent:
                     'width': cell.width.inches,
                     'grid_span': grid_span,
                     'is_merge_start': is_merge_start,
-                    'text': cell.text,
-                    'paragraphs': []
+                    # 'text': cell.text,
+                    # 'paragraphs': []
+                    "content": self.get_content(cell)
                 }
 
-                if cell.text.strip():
-                    for cell_para_index, cell_para in enumerate(cell.paragraphs):
-                        cell_para_format = self.get_paragraph_format(cell_para)
-                        para_data = {
-                            'para_index': cell_para_index,
-                            'text': cell_para.text,
-                            'para_format': cell_para_format,
-                            'runs': self.get_run_format(cell_para)
-                        }
-                        cell_content['paragraphs'].append(para_data)
+                # if cell.text.strip():
+                #     # all_elements = self.sort_element(cell)
+                #     # for cell_para_index, cell_para in enumerate(cell.paragraphs):
+                #     #     cell_para_format = self.get_paragraph_format(cell_para)
+                #     #     para_data = {
+                #     #         'para_index': cell_para_index,
+                #     #         'text': cell_para.text,
+                #     #         'para_format': cell_para_format,
+                #     #         'runs': self.get_run_format(cell_para)
+                #     #     }
+                #     #     cell_content['paragraphs'].append(para_data)
+                #     cell_data = self.get_content(cell)
+                #     # cell_content['content'].append(cell_data)
+                #     cell_content["content"].extend(cell_data)
+                cells.append(cell_content)
+                # row_data['cells'].append(cell_content)
+            # rows.append(row_data)
+        # return rows
+        return cells
 
-                row_data['cells'].append(cell_content)
-            rows.append(row_data)
-        return rows
-
-    def split_cover_body_data(self, content_data):
+    def split_cover_body_data(self, original_data):
         """获取word中封面的内容：修订记录表格之前内容算作封面"""
         # 先判断标题是表格还是文本，如果是表格那么首页就截止到第二个表格
         cover_data = []
         body_data = []
         top_title_type = ''
         cover_table_num = 1
-        for index, item in enumerate(content_data):
+        for index, item in enumerate(original_data):
             if item['flag'] == 'top_title':
                 top_title_type = item['type']
             if top_title_type == 'table':
@@ -158,12 +174,11 @@ class DocumentContent:
                 break
             # 先判断再记录
             cover_data.append(item)
-        body_data = content_data[len(cover_data) :]
+        body_data = original_data[len(cover_data):]
 
         data = {
             "cover_data": cover_data,
             "body_data": body_data,
-            "content_data": content_data
         }
         return data
 
@@ -190,57 +205,12 @@ class DocumentContent:
                 "section_index": index,
                 "is_linked_to_previous": section.header.is_linked_to_previous,
                 "is_different_first_page": section.different_first_page_header_footer,
-                "is_different_odd_and_even": doc.settings.odd_and_even_pages_header_footer,     # 判断奇偶数页眉页脚是否相同
-                "first_page_header_content": self.get_content(section.first_page_header),       # 判断首页是否相同
-                "odd_page_header": self.get_content(section.header),        # 如果奇偶页相同，则全部在header里
+                "is_different_odd_and_even": doc.settings.odd_and_even_pages_header_footer,  # 判断奇偶数页眉页脚是否相同
+                "first_page_header_content": self.get_content(section.first_page_header),  # 判断首页是否相同
+                "odd_page_header": self.get_content(section.header),  # 如果奇偶页相同，则全部在header里
                 "even_page_header": self.get_content(section.even_page_header),
             }
             header_data.append(section_data)
-            # # 先处理首页的页眉
-            # if section.different_first_page_header_footer:
-            #     first_page_data = {
-            #         'type': 'header',
-            #         'index': "",
-            #         "section": index,
-            #         'is_linked_to_previous': section.header.is_linked_to_previous,
-            #         'flag': 'first_page_header',
-            #         'content': self.get_content(section.first_page_header)
-            #     }
-            #     header_content.append(first_page_data)
-            #
-            # # 处理非首页的页眉，先判断奇偶页是否相同
-            # if different_odd_and_even:
-            #     # 奇数页页眉
-            #     odd_header_data = {
-            #         "section": index,
-            #         'type': 'header',
-            #         'index': index,
-            #         'element_index': index,
-            #         'flag': 'odd_page_header',
-            #         'content': self.get_content(section.header)
-            #     }
-            #     header_content.append(odd_header_data)
-            #     # 偶数页页眉
-            #     even_header_data = {
-            #         "section": index,
-            #         'type': 'header',
-            #         'index': index,
-            #         'element_index': index,
-            #         'flag': 'even_page_header',
-            #         'content': self.get_content(section.even_page_header)
-            #     }
-            #     header_content.append(even_header_data)
-            # else:
-            #     header_data = {
-            #         "section": index,
-            #         'type': 'header',
-            #         'index': index,
-            #         'element_index': index,
-            #         'flag': 'odd_even_header',
-            #         'content': self.get_content(section.header),
-            #     }
-            #     header_content.append(header_data)
-
         return header_data
 
     def get_footer_content(self, doc):
@@ -301,50 +271,50 @@ class DocumentContent:
 
         return runs_data
 
-    def flag_title(self, content_data):
+    def flag_title(self, original_data):
         """
         标记文件大标题：第一个非空内容，表格、段落都可以。
         """
         # 若是标题是用表格做的，还要处理
         title_text = ''
-        for index, item in enumerate(content_data):
+        for index, item in enumerate(original_data):
             if item['type'] == 'paragraph' and item['text'].strip():
-                content_data[index]['flag'] = 'top_title'
-                title_text = item['text'].strip()
+                original_data[index]['flag'] = 'top_title'
+                # title_text = item['text'].strip()
                 break
             if item['type'] == 'table' and (len(item['rows']) == 1 and item['cols'] == 1):
                 # item['rows'][0]['cells'][0]['text']
-                content_data[index]['flag'] = 'top_title'
+                original_data[index]['flag'] = 'top_title'
                 title_text = item['rows'][0]['cells'][0]['text'].strip()
                 break
-        return content_data
+        return original_data
 
-    def flag_preamble(self, content_data):
+    def flag_preamble(self, original_data):
         """
         标记文档的头信息，如文件编号、版本、制定部门、制定日期、总页次。
         """
         # 找到文件头信息的位置，从标题后第一个有内容的段落
         # 先只考虑大标题是段落的形式
-        for index, item in enumerate(content_data):
+        for index, item in enumerate(original_data):
             if item['flag'] == 'top_title':
                 title_end_index = index
             if item['type'] == 'table':
                 preamble_end_index = index
-        cut_title_data = content_data[title_end_index + 1:preamble_end_index]
+        cut_title_data = original_data[title_end_index + 1:preamble_end_index]
 
         for index, item in enumerate(cut_title_data):
             if item['type'] == 'paragraph' and item['text'].strip():
                 cut_title_data[index]['flag'] = 'preamble'
-        return content_data
+        return original_data
 
-    def flag_approveTable(self, content_data):
+    def flag_approveTable(self, original_data):
         """
         标记文档封面的审批表格
         """
-        for item in content_data:
+        for item in original_data:
             if item['type'] == 'table' and item['element_index'] == 0:
                 item['flag'] = 'approve'
-        return content_data
+        return original_data
 
 
 def set_paper_size_format(doc):
@@ -386,7 +356,7 @@ def add_cover(doc, data):
                     run = paragraph.add_run(run_data['text'])
                     apply_run_format(run, run_data)
         if item['type'] == 'table':
-            table = doc.add_table(rows=len(item['rows']), cols=item['cols'])
+            table = doc.add_table(rows=item['rows'], cols=item['cols'])
             table.style = 'Table Grid'
 
             # 设置审批表格样式
@@ -395,30 +365,48 @@ def add_cover(doc, data):
 
             # 设置表格样式
             apply_table_format(table, item)
-
             # 应用表格内容
-            for row_idx, row_data in enumerate(item['rows']):
-                for cell_idx, cell_data in enumerate(row_data['cells']):
-                    if (cell_data['grid_span'] > 1 and cell_data['is_merge_start']) or cell_data['grid_span'] == 1:
-                        cell = table.rows[row_idx].cells[cell_idx]
-
-                        # 清空默认段落
-                        for paragraph in cell.paragraphs:
-                            p = paragraph._element
-                            p.getparent().remove(p)
-
-                        # 添加内容到单元格
-                        if cell_data['paragraphs']:
-                            for para_data in cell_data['paragraphs']:
+            for cell_idx, cell_data in enumerate(item['cells']):
+                if (cell_data['grid_span'] > 1 and cell_data['is_merge_start']) or cell_data['grid_span'] == 1:
+                    cell = table.rows[cell_data["row"]].cells[cell_data["col"]]
+                    # 清空默认段落
+                    for paragraph in cell.paragraphs:
+                        p = paragraph._element
+                        p.getparent().remove(p)
+                    # 添加内容到单元格
+                    if cell_data['content']:
+                        for content in cell_data['content']:
+                            if content['type'] == 'paragraph':
                                 cell_para = cell.add_paragraph()
-                                apply_paragraph_format(cell_para, para_data['para_format'])
+                                apply_paragraph_format(cell_para, content['para_format'])
 
-                                for run_data in para_data['runs']:
+                                for run_data in content['runs']:
                                     run = cell_para.add_run(run_data['text'])
                                     apply_run_format(run, run_data)
-                        else:
-                            # 如果没有详细的段落信息，只添加文本
-                            cell.text = cell_data['text']
+
+            # 应用表格内容
+            # for row_idx, row_data in enumerate(item['rows']):
+            #     for cell_idx, cell in enumerate(row_data['cells']):
+            #         if (cell['grid_span'] > 1 and cell['is_merge_start']) or cell['grid_span'] == 1:
+            #             cell = table.rows[row_idx].cells[cell_idx]
+            #
+            #             # 清空默认段落
+            #             for paragraph in cell.paragraphs:
+            #                 p = paragraph._element
+            #                 p.getparent().remove(p)
+            #
+            #             # 添加内容到单元格
+            #             if cell['content']:
+            #                 for para_data in cell['content']:
+            #                     cell_para = cell.add_paragraph()
+            #                     apply_paragraph_format(cell_para, para_data['para_format'])
+            #
+            #                     for run_data in para_data['runs']:
+            #                         run = cell_para.add_run(run_data['text'])
+            #                         apply_run_format(run, run_data)
+            #             else:
+            #                 # 如果没有详细的段落信息，只添加文本
+            #                 cell.text = cell['text']
 
 
 def add_content(block, data):
@@ -446,7 +434,7 @@ def add_content(block, data):
                 run = page_break_para.add_run()
                 run.add_break(WD_BREAK.PAGE)
 
-            table = block.add_table(rows=len(item['rows']), cols=item['cols'])
+            table = block.add_table(rows=item['rows'], cols=item['cols'])
             table.style = 'Table Grid'
 
             # 设置审批表格样式
@@ -457,28 +445,50 @@ def add_content(block, data):
             apply_table_format(table, item)
 
             # 应用表格内容
-            for row_idx, row_data in enumerate(item['rows']):
-                for cell_idx, cell_data in enumerate(row_data['cells']):
-                    if (cell_data['grid_span'] > 1 and cell_data['is_merge_start']) or cell_data['grid_span'] == 1:
-                        cell = table.rows[row_idx].cells[cell_idx]
-
-                        # 清空默认段落
-                        for paragraph in cell.paragraphs:
-                            p = paragraph._element
-                            p.getparent().remove(p)
-
-                        # 添加内容到单元格
-                        if cell_data['paragraphs']:
-                            for para_data in cell_data['paragraphs']:
+            for cell_idx, cell_data in enumerate(item['cells']):
+                if (cell_data['grid_span'] > 1 and cell_data['is_merge_start']) or cell_data['grid_span'] == 1:
+                    cell = table.rows[cell_data["row"]].cells[cell_data["col"]]
+                    # 清空默认段落
+                    for paragraph in cell.paragraphs:
+                        p = paragraph._element
+                        p.getparent().remove(p)
+                    # 添加内容到单元格
+                    if cell_data['content']:
+                        for content in cell_data['content']:
+                            if content['type'] == 'paragraph':
                                 cell_para = cell.add_paragraph()
-                                apply_paragraph_format(cell_para, para_data['para_format'])
+                                apply_paragraph_format(cell_para, content['para_format'])
 
-                                for run_data in para_data['runs']:
+                                for run_data in content['runs']:
                                     run = cell_para.add_run(run_data['text'])
                                     apply_run_format(run, run_data)
-                        else:
-                            # 如果没有详细的段落信息，只添加文本
-                            cell.text = cell_data['text']
+
+                            # 表格内嵌表格
+                            if content['type'] == 'table':
+                                sub_table = cell.add_table(rows=content['rows'], cols=content['cols'])
+                                sub_table.style = 'Table Grid'
+
+                                # 设置表格样式
+                                apply_table_format(sub_table, content)
+
+                                # 应用表格内容
+                                for sub_cell_idx, sub_cell_data in enumerate(content['cells']):
+                                    if (sub_cell_data['grid_span'] > 1 and sub_cell_data['is_merge_start']) or cell_data['grid_span'] == 1:
+                                        cell = sub_table.rows[sub_cell_data["row"]].cells[sub_cell_data["col"]]
+                                        # 清空默认段落
+                                        for paragraph in cell.paragraphs:
+                                            p = paragraph._element
+                                            p.getparent().remove(p)
+                                        # 添加内容到单元格
+                                        if sub_cell_data['content']:
+                                            for content in sub_cell_data['content']:
+                                                if content['type'] == 'paragraph':
+                                                    cell_para = cell.add_paragraph()
+                                                    apply_paragraph_format(cell_para, content['para_format'])
+
+                                                    for run_data in content['runs']:
+                                                        run = cell_para.add_run(run_data['text'])
+                                                        apply_run_format(run, run_data)
 
 
 def add_header(doc, header_data):
@@ -612,37 +622,52 @@ def apply_run_format(run, run_data):
             pass
 
 
-def apply_table_format(table, table_format_info):
+def apply_table_format(table, table_data):
     """
     处理表格样式
     """
     # 自动调整列宽：禁用
     table.autofit = False
-
     # 表格对齐方式，非内容对齐方式
-    table.alignment = table_format_info['table_alignment']
+    table.alignment = table_data["table_format"]['table_alignment']
 
     # 单元格样式
-    for index, row in enumerate(table_format_info['rows']):
-        table.rows[index].height = Cm(1)
-        for cell in row['cells']:
-            row = cell['row']
-            col = cell['col']
-            # 设置表格宽度
-            if cell.get("width"):
-                table.cell(row, col).width = Inches(cell['width'])
-            table.cell(row, col).height = Cm(1.3)
+    for cell in table_data["cells"]:
+        row = cell['row']
+        col = cell['col']
+        # 设置表格宽度
+        if cell.get("width"):
+            table.cell(row, col).width = Inches(cell['width'])
+        table.cell(row, col).height = Cm(1.3)
 
-            # 合并单元格
-            if cell['is_merge_start']:
-                row = cell['row']
-                col = cell['col']
-                # 处理水平合并（gridSpan）
-                if cell['grid_span'] > 1:
-                    # 合并水平单元格
-                    start_cell = table.rows[row].cells[col]
-                    end_cell = table.rows[row].cells[col + cell['grid_span'] - 1]
-                    start_cell.merge(end_cell)
+        # 合并单元格
+        if cell["is_merge_start"]:
+            # 处理水平合并（gridSpan）
+            if cell['grid_span'] > 1:
+                start_cell = table.rows[row].cells[col]
+                end_cell = table.rows[row].cells[col + cell['grid_span'] - 1]
+                start_cell.merge(end_cell)
+
+    # for index, row in enumerate(table_data['rows']):
+    #     table.rows[index].height = Cm(1)
+    #     for cell in row['cells']:
+    #         row = cell['row']
+    #         col = cell['col']
+    #         # 设置表格宽度
+    #         if cell.get("width"):
+    #             table.cell(row, col).width = Inches(cell['width'])
+    #         table.cell(row, col).height = Cm(1.3)
+    #
+    #         # 合并单元格
+    #         if cell['is_merge_start']:
+    #             row = cell['row']
+    #             col = cell['col']
+    #             # 处理水平合并（gridSpan）
+    #             if cell['grid_span'] > 1:
+    #                 # 合并水平单元格
+    #                 start_cell = table.rows[row].cells[col]
+    #                 end_cell = table.rows[row].cells[col + cell['grid_span'] - 1]
+    #                 start_cell.merge(end_cell)
     # if table_format_info['flag'] == 'top_title':
     #     table.autofit = True
 
@@ -678,36 +703,81 @@ def add_paragraph_translation(original_data, translator, language):
 
 def add_table_translation(original_data, translator, language):
     new_data = original_data.copy()
-    for item in new_data:
+    new_data2 = []
+    for index, item in enumerate(original_data):
         if item['type'] == 'table':
-            for row in item['rows']:
-                for cell in row['cells']:
-                    new_cell = cell.copy()
-                    new_cell['paragraphs'] = []
+            for idx, cell in enumerate(item['cells']):
+                if (cell['grid_span'] > 1 and cell['is_merge_start']) or cell['grid_span'] == 1:
+                    after_para = add_paragraph_translation(cell["content"], translator, language)
+                    after_table = add_table_translation(after_para, translator, language)
 
-                    for para in cell['paragraphs']:
-                        original_text = para['text']
-                        if original_text.strip():
-                            if (cell['grid_span'] > 1 and cell['is_merge_start']) or cell['grid_span'] == 1:
-                                new_cell['paragraphs'].append(para)
+                    new_data[index]['cells'][idx]["content"] = after_table
 
-                                # 多种语言
-                                for lang in language:
-                                    new_para = para.copy()
-
-                                    translated_text = translator.translate(original_text, language=lang, display=True)
-                                    # translated_text = original_text
-                                    new_para['text'] = translated_text
-                                    new_para['language'] = lang
-
-                                    # 更改run里面内容
-                                    new_run = para['runs'][0].copy()
-                                    new_run['text'] = translated_text
-                                    new_runs = [new_run]
-                                    new_para['runs'] = new_runs
-
-                                    new_cell['paragraphs'].append(new_para)
-                    cell['paragraphs'] = new_cell['paragraphs']
+            #     new_item = item.copy()
+            #
+            # for row in item['rows']:
+            #     for cell in row['cells']:
+            #         new_cell = cell.copy()
+            #         new_cell['content'] = []
+            #
+            #         for para in cell['content']:
+            #             if para['type'] == 'paragraph':
+            #                 original_text = para['text']
+            #                 if original_text.strip():
+            #                     if (cell['grid_span'] > 1 and cell['is_merge_start']) or cell['grid_span'] == 1:
+            #                         new_cell['content'].append(para)
+            #
+            #                         # 多种语言
+            #                         for lang in language:
+            #                             new_para = para.copy()
+            #
+            #                             translated_text = translator.translate(original_text, language=lang,
+            #                                                                    display=True)
+            #                             # translated_text = original_text
+            #                             new_para['text'] = translated_text
+            #                             new_para['language'] = lang
+            #
+            #                             # 更改run里面内容
+            #                             new_run = para['runs'][0].copy()
+            #                             new_run['text'] = translated_text
+            #                             new_runs = [new_run]
+            #                             new_para['runs'] = new_runs
+            #
+            #                             new_cell['content'].append(new_para)
+            #                 if para['type'] == 'table':
+            #                     for row in item['rows']:
+            #                         for cell in row['cells']:
+            #                             new_cell = cell.copy()
+            #                             new_cell['content'] = []
+            #
+            #                             for para in cell['content']:
+            #                                 if para['type'] == 'paragraph':
+            #                                     original_text = para['text']
+            #                                     if original_text.strip():
+            #                                         if (cell['grid_span'] > 1 and cell['is_merge_start']) or cell['grid_span'] == 1:
+            #                                             new_cell['content'].append(para)
+            #
+            #                                             # 多种语言
+            #                                             for lang in language:
+            #                                                 new_para = para.copy()
+            #
+            #                                                 translated_text = translator.translate(original_text,
+            #                                                                                        language=lang,
+            #                                                                                        display=True)
+            #                                                 # translated_text = original_text
+            #                                                 new_para['text'] = translated_text
+            #                                                 new_para['language'] = lang
+            #
+            #                                                 # 更改run里面内容
+            #                                                 new_run = para['runs'][0].copy()
+            #                                                 new_run['text'] = translated_text
+            #                                                 new_runs = [new_run]
+            #                                                 new_para['runs'] = new_runs
+            #
+            #                                                 new_cell['content'].append(new_para)
+            #                         cell['content'] = new_cell['content']
+            #
+            #         cell['content'] = new_cell['content']
     return new_data
 
 
@@ -788,9 +858,13 @@ def add_header_translation(original_data, translator, language):
             "is_linked_to_previous": item['is_linked_to_previous'],
             "is_different_first_page": item['is_different_first_page'],
             "is_different_odd_and_even": item['is_different_odd_and_even'],
-            "first_page_header_content": add_table_translation(add_paragraph_translation(item['first_page_header_content'], translator, language), translator, language),
-            'odd_page_header': add_table_translation(add_paragraph_translation(item['odd_page_header'], translator, language), translator, language),
-            'even_page_header': add_table_translation(add_paragraph_translation(item['even_page_header'], translator, language), translator, language)
+            "first_page_header_content": add_table_translation(
+                add_paragraph_translation(item['first_page_header_content'], translator, language), translator,
+                language),
+            'odd_page_header': add_table_translation(
+                add_paragraph_translation(item['odd_page_header'], translator, language), translator, language),
+            'even_page_header': add_table_translation(
+                add_paragraph_translation(item['even_page_header'], translator, language), translator, language)
         }
         # after_para = add_paragraph_translation(item['content'], translator, language)
         # after_table = add_table_translation(after_para, translator, language)
@@ -811,9 +885,13 @@ def add_footer_translation(original_data, translator, language):
             "is_linked_to_previous": item['is_linked_to_previous'],
             "is_different_first_page": item['is_different_first_page'],
             "is_different_odd_and_even": item['is_different_odd_and_even'],
-            "first_page_footer_content": add_table_translation(add_paragraph_translation(item['first_page_footer_content'], translator, language), translator, language),
-            'odd_page_footer': add_table_translation(add_paragraph_translation(item['odd_page_footer'], translator, language), translator, language),
-            'even_page_footer': add_table_translation(add_paragraph_translation(item['even_page_footer'], translator, language), translator, language)
+            "first_page_footer_content": add_table_translation(
+                add_paragraph_translation(item['first_page_footer_content'], translator, language), translator,
+                language),
+            'odd_page_footer': add_table_translation(
+                add_paragraph_translation(item['odd_page_footer'], translator, language), translator, language),
+            'even_page_footer': add_table_translation(
+                add_paragraph_translation(item['even_page_footer'], translator, language), translator, language)
         }
         new_data.append(item_translation)
     return new_data
@@ -844,4 +922,3 @@ def doc_to_docx(doc_path, docx_path=None):
         return False
     finally:
         word.Quit()
-

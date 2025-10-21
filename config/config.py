@@ -26,8 +26,8 @@ TEST_DB = {
 
 # 词库位置
 GLOSSARY = {
-    'dir': './config',
-    # 'dir': 'F:/Code/Project/tools/config',
+    # 'dir': './config',
+    'dir': 'D:/Code/Project/tools/config',
     'languages': {
         '英语': 'glossary_en.json',
         '越南语': 'glossary_vi.json',
