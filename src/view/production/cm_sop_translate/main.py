@@ -69,6 +69,9 @@ def docx_translate(language):
             # 页眉、页脚
             header_data = new_doc.get_header_content(doc)
             footer_data = new_doc.get_footer_content(doc)
+            # picture&shape
+            pictures = new_doc.extract_pics(doc)
+            shapes = new_doc.extract_shapes(doc)
 
             # 2. 标注关键信息：大标题、头信息，同时修改content_data内容
             after_title = new_doc.flag_title(content_data)
@@ -82,8 +85,8 @@ def docx_translate(language):
             # ① 翻译封面
             translated_cover_data = add_cover_translation(data['cover_data'], translator, language)
             # ② 翻译正文内容
-            translated_body_data = add_table_translation(
-                add_paragraph_translation(data['body_data'], translator, language), translator, language)
+            after_para = add_paragraph_translation(data['body_data'], translator, language)
+            translated_body_data = add_table_translation(after_para, translator, language)
             # ③ 翻译页眉、页脚
             translated_header_data = add_header_translation(header_data, translator, language)
             translated_footer_data = add_footer_translation(footer_data, translator, language)
@@ -94,6 +97,19 @@ def docx_translate(language):
 
             # 6. 创建新文档
             create_new_document(formatted_content, output_file)
+
+            # 7. 记录此文件存在图片或者形状
+            log_path = os.path.join(output_folder, "log.txt")
+            log_pic = ""
+            log_shape = ""
+            current_time = datetime.datetime.now().strftime('%y-%m-%d %H:%M:%S')
+            if len(pictures) > 0:
+                log_pic = f"{current_time}: {filename}存在{len(pictures)}张图片！\n"
+            if len(shapes) > 0:
+                log_shape = f"{current_time}: {filename}存在{len(shapes)}个形状！\n"
+            if (log_pic+log_shape).strip():
+                with open(log_path, "a", encoding="utf-8") as f:
+                    f.write(log_pic+log_shape)
             print(f"  已完成翻译: {output_filename}")
 
     print(f"所有文件处理完成！输出目录: {output_folder}")

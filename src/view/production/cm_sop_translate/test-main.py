@@ -25,7 +25,7 @@ if __name__ == "__main__":
     current_time = datetime.datetime.now().strftime('%y%m%d%H%M%S')
     language = ['英语', '越南语']
 
-    input_file = r"D:\Code\Project\tools\data\test\13.docx"
+    input_file = r"F:\Code\Project\tools\data\test\test.docx"
 
     output_folder = r"D:\Code\Project\tools\data\temp"
     file_base_name = os.path.basename(input_file)
@@ -41,6 +41,9 @@ if __name__ == "__main__":
     # 页眉、页脚
     header_data = new_doc.get_header_content(doc)
     footer_data = new_doc.get_footer_content(doc)
+    # picture&shape
+    pictures = new_doc.extract_pics(doc)
+    shapes = new_doc.extract_shapes(doc)
 
     # 2. 标注关键信息：大标题、头信息，同时修改content_data内容
     after_title = new_doc.flag_title(content_data)
