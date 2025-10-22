@@ -21,7 +21,6 @@ from win32com import client as wc
 
 from src.view.production.cm_sop_translate.template import apply_cover_template, apply_preamble_format, \
     apply_approveTable_format
-from src.view.production.cm_sop_translate.translator import Translator
 
 
 class DocumentContent:
@@ -59,8 +58,6 @@ class DocumentContent:
                     'index': position,
                     'element_index': index,
                     'flag': '',
-                    # 'table_alignment': WD_TABLE_ALIGNMENT.CENTER,  # 表格居中，非内容居中
-                    # 'rows': self.get_table_content(table),
                     "rows": len(table.rows),
                     'cols': len(table.columns),
                     "table_format": {
@@ -134,14 +131,10 @@ class DocumentContent:
                     'width': cell.width.inches,
                     'grid_span': grid_span,
                     'is_merge_start': is_merge_start,
-                    # 'text': cell.text,
-                    # 'paragraphs': []
                     "content": self.get_content(cell)
                 }
                 cells_data.append(cell_content)
-                # row_data['cells'].append(cell_content)
-            # rows.append(row_data)
-        # return rows
+
         return cells_data
 
     def extract_pics(self, doc):
@@ -229,10 +222,6 @@ class DocumentContent:
             "body_data": body_data,
         }
         return data
-
-    # def split_cover_body_data(self, content_data):
-    #     """就取第一页"""
-    #     pass
 
     def get_header_content(self, doc):
         """
@@ -364,6 +353,21 @@ class DocumentContent:
                 item['flag'] = 'approve'
         return original_data
 
+    def flag_main_text(self, original_data):
+        """
+        标记出来表格的主文本所在的单元格，因为修订记录和主文本原文件中是同一个表格，要切分开。
+        采用的方法是第二个表格中的第一次合并单元格，此单元格应空行很多行之后，而且正文开头是“目的”？
+        """
+        for item in original_data:
+            # 第二个表格，而且表格第一格中文字内容是“版本”，就认为是修订记录表格
+            if item['type'] == 'table' and item['element_index'] == 1 and item["cells"][0]["content"][0]['text'].strip() == "版本":
+                item['flag'] = 'revision_record'
+                for cell in item['cells']:
+                    # 合并的单元格就认为是正文主体
+                    if cell["grid_span"] > 1:
+                        cell["flag"] = "main_text"
+        return original_data
+
 
 def set_paper_size_format(doc):
     """
@@ -408,8 +412,8 @@ def add_cover(doc, data):
             table.style = 'Table Grid'
 
             # 设置审批表格样式
-            if item['flag'] == 'approve':
-                apply_approveTable_format(table)
+            # if item['flag'] == 'approve':
+            #     apply_approveTable_format(table)
 
             # 设置表格样式
             apply_table_format(table, item)
@@ -521,21 +525,21 @@ def add_content(block, data):
 
                                 # 应用表格内容
                                 for sub_cell_idx, sub_cell_data in enumerate(content['cells']):
-                                    if (sub_cell_data['grid_span'] > 1 and sub_cell_data['is_merge_start']) or cell_data['grid_span'] == 1:
-                                        cell = sub_table.rows[sub_cell_data["row"]].cells[sub_cell_data["col"]]
+                                    if (sub_cell_data['grid_span'] > 1 and sub_cell_data['is_merge_start']) or sub_cell_data['grid_span'] == 1:
+                                        sub_cell = sub_table.rows[sub_cell_data["row"]].cells[sub_cell_data["col"]]
                                         # 清空默认段落
-                                        for paragraph in cell.paragraphs:
-                                            p = paragraph._element
-                                            p.getparent().remove(p)
+                                        for sub_paragraph in sub_cell.paragraphs:
+                                            sub_p = sub_paragraph._element
+                                            sub_p.getparent().remove(sub_p)
                                         # 添加内容到单元格
                                         if sub_cell_data['content']:
-                                            for content in sub_cell_data['content']:
-                                                if content['type'] == 'paragraph':
-                                                    cell_para = cell.add_paragraph()
-                                                    apply_paragraph_format(cell_para, content['para_format'])
+                                            for sub_content in sub_cell_data['content']:
+                                                if sub_content['type'] == 'paragraph':
+                                                    sub_cell_para = sub_cell.add_paragraph()
+                                                    apply_paragraph_format(sub_cell_para, sub_content['para_format'])
 
-                                                    for run_data in content['runs']:
-                                                        run = cell_para.add_run(run_data['text'])
+                                                    for run_data in sub_content['runs']:
+                                                        run = sub_cell_para.add_run(run_data['text'])
                                                         apply_run_format(run, run_data)
 
 
@@ -686,7 +690,7 @@ def apply_table_format(table, table_data):
         # 设置表格宽度
         if cell.get("width"):
             table.cell(row, col).width = Inches(cell['width'])
-        table.cell(row, col).height = Cm(1.3)
+        table.rows[row].height = Cm(1.3)
 
         # 合并单元格
         if cell["is_merge_start"]:
@@ -695,30 +699,6 @@ def apply_table_format(table, table_data):
                 start_cell = table.rows[row].cells[col]
                 end_cell = table.rows[row].cells[col + cell['grid_span'] - 1]
                 start_cell.merge(end_cell)
-
-    # for index, row in enumerate(table_data['rows']):
-    #     table.rows[index].height = Cm(1)
-    #     for cell in row['cells']:
-    #         row = cell['row']
-    #         col = cell['col']
-    #         # 设置表格宽度
-    #         if cell.get("width"):
-    #             table.cell(row, col).width = Inches(cell['width'])
-    #         table.cell(row, col).height = Cm(1.3)
-    #
-    #         # 合并单元格
-    #         if cell['is_merge_start']:
-    #             row = cell['row']
-    #             col = cell['col']
-    #             # 处理水平合并（gridSpan）
-    #             if cell['grid_span'] > 1:
-    #                 # 合并水平单元格
-    #                 start_cell = table.rows[row].cells[col]
-    #                 end_cell = table.rows[row].cells[col + cell['grid_span'] - 1]
-    #                 start_cell.merge(end_cell)
-    # if table_format_info['flag'] == 'top_title':
-    #     table.autofit = True
-
 
 def add_paragraph_translation(original_data, translator, language):
     """添加翻译段落"""

@@ -28,11 +28,12 @@ def apply_template(body_data, header_data=None, footer_data=None, cover_data=Non
     # after_header = apply_header_template(header_data)
     # after_footer = apply_footer_template(footer_data)
     after_cover = apply_cover_template(cover_data)
+    after_body = apply_main_text_template(body_data)
     new_data = {
         "header": header_data,
         "footer": footer_data,
         "cover": after_cover,
-        "body": body_data,
+        "body": after_body,
     }
     return new_data
 
@@ -199,17 +200,72 @@ def apply_cover_template(cover_data=None):
             item['index'] = len(new_cover_data) + 1
             item['element_index'] = 1
             for cell in item["cells"]:
+                cell["width"] = 1.8
                 for para in cell["content"]:
                     para["para_format"]["line_spacing"] = Pt(20)
+                    para["para_format"]["first_line_indent"] = None
+                    para["para_format"]["alignment"] = "CENTER (1)"
 
-
-            # for row in item['rows']:
-            #     for cell in row['cells']:
-            #         for para in cell['content']:
-            #             para['para_format']['line_spacing'] = Pt(20)
             new_cover_data.append(item)
 
     return new_cover_data
+
+
+def apply_main_text_template(body_data=None):
+    """先拆分修订记录和正文表格，然后修改数据，使其正文单起一个表格"""
+    # 如果没有此内容，则不应用模板。
+    if body_data is None:
+        return None
+
+    for item in body_data:
+        if item['type'] == 'table' and item["flag"] == "revision_record":
+            # 正文主体的表格（list）
+            main_text_cells = []
+            for cell in item["cells"]:
+                if cell.get("flag") == "main_text":
+                    main_text_cells.append(cell)
+
+            # 修订记录的表格（list）
+            revision_cells = [i for i in item["cells"] if i not in main_text_cells]
+            # 保留12行
+            is_allow_cut = True
+            line_num = 10
+            if len(revision_cells) >= line_num:
+                for cell in revision_cells[line_num*item["cols"]:]:
+                    for content in cell["content"]:
+                        if content["text"].strip() != "":
+                            is_allow_cut = False
+                            break
+            if is_allow_cut:
+                revision_cells = revision_cells[:line_num*item["cols"]]
+
+            # 生成新的body_data
+            item["cells"] = revision_cells
+            item["rows"] = int(len(revision_cells)/item["cols"])
+
+            main_text_cell_data = main_text_cells[0]
+            main_text_cell_data["grid_span"] = 1
+            main_text_cell_data["is_merge_start"] = False
+            main_text_cell_data["row"] = 0
+            main_text_cell_data["col"] = 0
+            # width = 0
+            # for cell1 in main_text_cells:
+            #     width += cell1["width"]
+            # main_text_cell_data["width"] = width
+            main_text_data = {
+                "type": "table",
+                "index": int(item["index"]) + 1,
+                "element_index": int(item["element_index"]) + 1,
+                "flag": "main_text",
+                "rows": 1,
+                "cols": 1,
+                "table_format": item["table_format"],
+                "cells": [main_text_cell_data]
+            }
+            # 插入到当前表格后面，即修订记录之后
+            body_data.insert(body_data.index(item)+1, main_text_data)
+
+    return body_data
 
 
 def apply_preamble_format(paragraph, preamble_data):
@@ -257,11 +313,10 @@ def apply_approveTable_format(table):
     """
     for i in range(len(table.rows)):
         table.rows[i].height = Cm(2.5)
-    table.cell(0, 0).width = Cm(3)
-    table.cell(0, 1).width = Cm(3)
-    table.cell(0, 2).width = Cm(3)
-    # for i in range(len(table.columns)):
-    #     table.columns[i].width = Cm(2.5)
+
+    for i in range(len(table.rows)):
+        for j in range(len(table.columns)):
+            table.cell(i, j).width = Cm(5)
 
 
 def apply_header_format(doc, header_data):
@@ -659,7 +714,7 @@ def main(data):
     print(f"{file} was saved successfully.")
 
 
-if __name__ == '__main__':
+# if __name__ == '__main__':
     # doc.settings.odd_and_even_pages_header_footer = True
     #
     # for section in doc.sections:
@@ -669,7 +724,7 @@ if __name__ == '__main__':
     #     # first_footer.paragraphs[0].font.bold = True
     #     # first_footer.paragraphs[0].add_run().font.size = Pt(36.0)
     #     first_footer.paragraphs[0].alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-    file = r"F:\Code\Project\tools\data\data.json"
-    with open(file, 'r', encoding='utf-8') as f:
-        data = json.load(f)
-    main(data)
+    # file = r"F:\Code\Project\tools\data\data.json"
+    # with open(file, 'r', encoding='utf-8') as f:
+    #     data = json.load(f)
+    # main(data)

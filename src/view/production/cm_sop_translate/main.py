@@ -76,9 +76,10 @@ def docx_translate(language):
             after_title = new_doc.flag_title(content_data)
             after_preamble = new_doc.flag_preamble(content_data)
             after_approve = new_doc.flag_approveTable(content_data)
+            after_main_text = new_doc.flag_main_text(content_data)
 
             # 3. 拆分封面和正文
-            data = new_doc.split_cover_body_data(after_approve)
+            data = new_doc.split_cover_body_data(after_main_text)
 
             # 4. 翻译
             # ① 翻译封面
@@ -121,17 +122,26 @@ def create_new_document(data, output_path):
     doc = Document()
     set_paper_size_format(doc)
 
-    try:
-        apply_header_format(doc, data['header'])
-        apply_footer_format(doc, data['footer'])
-        add_cover(doc, data['cover'])
-        add_content(doc, data['body'])
-    except Exception as e:
-        print(f"生成文件失败，异常信息：{e}")
-    finally:
-        # 保存文档
-        doc.save(output_path)
-        print(f"新文档已保存到: {output_path}")
+    apply_header_format(doc, data['header'])
+    apply_footer_format(doc, data['footer'])
+    add_cover(doc, data['cover'])
+    add_content(doc, data['body'])
+
+    # 保存文档
+    doc.save(output_path)
+    print(f"新文档已保存到: {output_path}")
+
+    # try:
+    #     apply_header_format(doc, data['header'])
+    #     apply_footer_format(doc, data['footer'])
+    #     add_cover(doc, data['cover'])
+    #     add_content(doc, data['body'])
+    # except Exception as e:
+    #     print(f"生成文件失败，异常信息：{e}")
+    # finally:
+    #     # 保存文档
+    #     doc.save(output_path)
+    #     print(f"新文档已保存到: {output_path}")
 
 
 if __name__ == '__main__':
