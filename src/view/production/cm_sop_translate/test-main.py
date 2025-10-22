@@ -25,7 +25,7 @@ if __name__ == "__main__":
     current_time = datetime.datetime.now().strftime('%y%m%d%H%M%S')
     language = ['英语', '越南语']
 
-    input_file = r"F:\Code\Project\tools\data\test\test.docx"
+    input_file = r"D:\Code\Project\tools\data\test\13.docx"
 
     output_folder = r"D:\Code\Project\tools\data\temp"
     file_base_name = os.path.basename(input_file)

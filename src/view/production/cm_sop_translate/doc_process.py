@@ -114,12 +114,13 @@ class DocumentContent:
         获取表格内容
         """
         # rows = []
+        cells_data = []
         cells = []
         for row_index, row in enumerate(table.rows):
-            # row_data = {'cells': []}
+            row_data = {'cells': []}
             for cell_index, cell in enumerate(row.cells):
                 # 只能判断横向合并,还有种方法，通过合并的两个单元格相等判断
-                # cells.append(cell)
+                cells.append(cell)
                 grid_span = int(cell.grid_span) if cell.grid_span else 1  # 单元格的跨度，若是合并单元格则大于1
                 is_merge_start = False
                 if grid_span > 1:
@@ -137,26 +138,11 @@ class DocumentContent:
                     # 'paragraphs': []
                     "content": self.get_content(cell)
                 }
-
-                # if cell.text.strip():
-                #     # all_elements = self.sort_element(cell)
-                #     # for cell_para_index, cell_para in enumerate(cell.paragraphs):
-                #     #     cell_para_format = self.get_paragraph_format(cell_para)
-                #     #     para_data = {
-                #     #         'para_index': cell_para_index,
-                #     #         'text': cell_para.text,
-                #     #         'para_format': cell_para_format,
-                #     #         'runs': self.get_run_format(cell_para)
-                #     #     }
-                #     #     cell_content['paragraphs'].append(para_data)
-                #     cell_data = self.get_content(cell)
-                #     # cell_content['content'].append(cell_data)
-                #     cell_content["content"].extend(cell_data)
-                cells.append(cell_content)
+                cells_data.append(cell_content)
                 # row_data['cells'].append(cell_content)
             # rows.append(row_data)
         # return rows
-        return cells
+        return cells_data
 
     def extract_pics(self, doc):
         pic_list = []

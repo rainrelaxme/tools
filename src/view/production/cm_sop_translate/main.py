@@ -18,8 +18,7 @@ from src.view.production.cm_sop_translate.auth import check_license
 from src.view.production.cm_sop_translate.doc_process import doc_to_docx, DocumentContent, set_paper_size_format, \
     add_content, add_cover_translation, add_paragraph_translation, add_cover, add_table_translation, \
     add_header_translation, add_footer_translation
-from src.view.production.cm_sop_translate.template import apply_footer_template, apply_header_template, \
-    apply_header_format, apply_footer_format, apply_template
+from src.view.production.cm_sop_translate.template import apply_header_format, apply_footer_format, apply_template
 from src.view.production.cm_sop_translate.translator import Translator
 
 

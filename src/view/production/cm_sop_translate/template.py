@@ -161,49 +161,6 @@ def apply_cover_template(cover_data=None):
             }
             cell['content'].append(content)
     table_1["cells"].append(cell)
-
-
-    # rows = []
-    # for item in cover_data:
-    #     if item['flag'] == 'top_title':
-    #         row = {
-    #             'cells': [
-    #                 {
-    #                     'row': 0,
-    #                     'col': 0,
-    #                     'grid_span': 1,
-    #                     'is_merge_start': False,
-    #                     'text': item['text'],
-    #                     'content': [
-    #                         {
-    #                             'para_index': 0,
-    #                             'text': item['text'],
-    #                             'para_format': item['para_format'],
-    #                             'runs': item['runs'] if 'runs' in item else []
-    #                         }
-    #                     ]
-    #                 }
-    #             ]
-    #         }
-    #         rows.append(row)
-    # new_rows = [
-    #     {
-    #         'cells': [
-    #             {
-    #                 'row': rows[0]['cells'][0]['row'],
-    #                 'col': rows[0]['cells'][0]['col'],
-    #                 'grid_span': rows[0]['cells'][0]['grid_span'],
-    #                 'is_merge_start': rows[0]['cells'][0]['is_merge_start'],
-    #                 'text': rows[0]['cells'][0]['text'],
-    #                 'paragraphs': []
-    #             }
-    #
-    #         ]
-    #     }
-    # ]
-    # for item in rows:
-    #     new_rows[0]['cells'][0]['paragraphs'].append(item['cells'][0]['paragraphs'][0])
-    # table_1['rows'] = new_rows
     new_cover_data.append(table_1)
 
     # 3. 接空行
