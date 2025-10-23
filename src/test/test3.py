@@ -33,10 +33,6 @@ for i in range(len(table.rows)):
 # new_doc.save(output_file)
 # print(f"新文档已保存到: {output_file}")
 
-a = {
-    "b": ""
-}
-if a.get("b").strip() is not None:
-    print("1111", a.get("b").strip(), "1111")
-else:
-    print("456", a.get("b").strip(), "1111")
+main_text_cells = []
+if len(main_text_cells) > 0 :
+    print("********",main_text_cells)

@@ -122,26 +122,26 @@ def create_new_document(data, output_path):
     doc = Document()
     set_paper_size_format(doc)
 
-    apply_header_format(doc, data['header'])
-    apply_footer_format(doc, data['footer'])
-    add_cover(doc, data['cover'])
-    add_content(doc, data['body'])
+    # apply_header_format(doc, data['header'])
+    # apply_footer_format(doc, data['footer'])
+    # add_cover(doc, data['cover'])
+    # add_content(doc, data['body'])
+    #
+    # # 保存文档
+    # doc.save(output_path)
+    # print(f"新文档已保存到: {output_path}")
 
-    # 保存文档
-    doc.save(output_path)
-    print(f"新文档已保存到: {output_path}")
-
-    # try:
-    #     apply_header_format(doc, data['header'])
-    #     apply_footer_format(doc, data['footer'])
-    #     add_cover(doc, data['cover'])
-    #     add_content(doc, data['body'])
-    # except Exception as e:
-    #     print(f"生成文件失败，异常信息：{e}")
-    # finally:
-    #     # 保存文档
-    #     doc.save(output_path)
-    #     print(f"新文档已保存到: {output_path}")
+    try:
+        apply_header_format(doc, data['header'])
+        apply_footer_format(doc, data['footer'])
+        add_cover(doc, data['cover'])
+        add_content(doc, data['body'])
+    except Exception as e:
+        print(f"生成文件失败，异常信息：{e}")
+    finally:
+        # 保存文档
+        doc.save(output_path)
+        print(f"新文档已保存到: {output_path}")
 
 
 if __name__ == '__main__':
@@ -158,28 +158,27 @@ if __name__ == '__main__':
         exit()
 
     while True:
-        try:
-            print("请选择使用方式(请输入序号)：\n"
-                  "1. 文本翻译\n"
-                  "2. 文档翻译\n"
-                  "3. 退出")
-            option = input().strip()
-            language = ['英语', '越南语']
-            if option == '1':
-                print(f"当前目标语言为{language}")
-                text_translate(language)
-            elif option == '2':
-                print(f"当前目标语言为{language}")
-                docx_translate(language)
-            elif option == '3':
-                print("\n感谢使用！程序即将退出...")
-                input("按回车键关闭窗口...")
-                sys.exit(0)
-            else:
-                print("输入错误，请重新输入")
+        print("请选择使用方式(请输入序号)：\n"
+              "1. 文本翻译\n"
+              "2. 文档翻译\n"
+              "3. 退出")
+        option = input().strip()
+        language = ['英语', '越南语']
+        if option == '1':
+            print(f"当前目标语言为{language}")
+            text_translate(language)
+        elif option == '2':
+            print(f"当前目标语言为{language}")
+            docx_translate(language)
+        elif option == '3':
+            print("\n感谢使用！程序即将退出...")
+            input("按回车键关闭窗口...")
+            sys.exit(0)
+        else:
+            print("输入错误，请重新输入")
 
-        except Exception as e:
-            print(f"处理过程中出现错误: {e}")
-        finally:
-            current_time = datetime.datetime.now().strftime('%y%m%d%H%M%S')
-            print(f"\n********************{current_time} end**********************")
+        current_time = datetime.datetime.now().strftime('%y%m%d%H%M%S')
+        print(f"\n********************{current_time} end**********************")
+
+
+

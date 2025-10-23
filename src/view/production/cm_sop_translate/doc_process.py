@@ -114,7 +114,7 @@ class DocumentContent:
         cells_data = []
         cells = []
         for row_index, row in enumerate(table.rows):
-            row_data = {'cells': []}
+            # row_data = {'cells': []}
             for cell_index, cell in enumerate(row.cells):
                 # 只能判断横向合并,还有种方法，通过合并的两个单元格相等判断
                 cells.append(cell)

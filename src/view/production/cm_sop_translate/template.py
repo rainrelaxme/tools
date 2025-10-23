@@ -149,6 +149,15 @@ def apply_cover_template(cover_data=None):
         "is_merge_start": False,
         "content": []
     }
+    para_format = {
+        'style': 'Normal',
+        'alignment': 'CENTER (1)',
+        'space_before': None,
+        'space_after': None,
+        'line_spacing': None,
+        'first_line_indent': None,
+        'left_indent': None
+    }
     for item in cover_data:
         if item["flag"] == 'top_title':
             content = {
@@ -157,7 +166,7 @@ def apply_cover_template(cover_data=None):
                 "element_index": 0,
                 "flag": "",
                 "text": item["text"],
-                'para_format': item['para_format'],
+                'para_format': para_format,
                 'runs': item['runs'] if 'runs' in item else []
             }
             cell['content'].append(content)
@@ -243,27 +252,28 @@ def apply_main_text_template(body_data=None):
             item["cells"] = revision_cells
             item["rows"] = int(len(revision_cells)/item["cols"])
 
-            main_text_cell_data = main_text_cells[0]
-            main_text_cell_data["grid_span"] = 1
-            main_text_cell_data["is_merge_start"] = False
-            main_text_cell_data["row"] = 0
-            main_text_cell_data["col"] = 0
-            # width = 0
-            # for cell1 in main_text_cells:
-            #     width += cell1["width"]
-            # main_text_cell_data["width"] = width
-            main_text_data = {
-                "type": "table",
-                "index": int(item["index"]) + 1,
-                "element_index": int(item["element_index"]) + 1,
-                "flag": "main_text",
-                "rows": 1,
-                "cols": 1,
-                "table_format": item["table_format"],
-                "cells": [main_text_cell_data]
-            }
-            # 插入到当前表格后面，即修订记录之后
-            body_data.insert(body_data.index(item)+1, main_text_data)
+            if len(main_text_cells) > 0:
+                main_text_cell_data = main_text_cells[0]
+                main_text_cell_data["grid_span"] = 1
+                main_text_cell_data["is_merge_start"] = False
+                main_text_cell_data["row"] = 0
+                main_text_cell_data["col"] = 0
+                # width = 0
+                # for cell1 in main_text_cells:
+                #     width += cell1["width"]
+                # main_text_cell_data["width"] = width
+                main_text_data = {
+                    "type": "table",
+                    "index": int(item["index"]) + 1,
+                    "element_index": int(item["element_index"]) + 1,
+                    "flag": "main_text",
+                    "rows": 1,
+                    "cols": 1,
+                    "table_format": item["table_format"],
+                    "cells": [main_text_cell_data]
+                }
+                # 插入到当前表格后面，即修订记录之后
+                body_data.insert(body_data.index(item)+1, main_text_data)
 
     return body_data
 
