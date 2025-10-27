@@ -25,7 +25,7 @@ if __name__ == "__main__":
     current_time = datetime.datetime.now().strftime('%y%m%d%H%M%S')
     language = ['英语', '越南语']
 
-    input_file = r"D:\Code\Project\tools\data\test\QMS-Y000-A00 质量管理手册.docx"
+    input_file = r"D:\Code\Project\tools\data\test\20-1.docx"
 
     output_folder = r"D:\Code\Project\tools\data\temp"
     file_base_name = os.path.basename(input_file)
@@ -68,6 +68,6 @@ if __name__ == "__main__":
     formatted_content = apply_template(body_data=translated_body_data, header_data=translated_header_data, footer_data=translated_footer_data, cover_data=translated_cover_data)
 
     # 6. 创建新文档
-    create_new_document(formatted_content, output_file)
+    create_new_document(formatted_content, output_file, 1)
 
     print(f"********************end********************")

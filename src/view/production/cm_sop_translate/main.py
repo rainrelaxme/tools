@@ -96,7 +96,7 @@ def docx_translate(language):
                                                footer_data=translated_footer_data, cover_data=translated_cover_data)
 
             # 6. 创建新文档
-            create_new_document(formatted_content, output_file)
+            create_new_document(formatted_content, output_file, 2)
 
             # 7. 记录此文件存在图片或者形状
             log_path = os.path.join(output_folder, "log.txt")
@@ -115,33 +115,34 @@ def docx_translate(language):
     print(f"所有文件处理完成！输出目录: {output_folder}")
 
 
-def create_new_document(data, output_path):
+def create_new_document(data, output_path, type):
     """
     根据记录的内容和格式生成新的Word文档
     """
     doc = Document()
     set_paper_size_format(doc)
 
-    # apply_header_format(doc, data['header'])
-    # apply_footer_format(doc, data['footer'])
-    # add_cover(doc, data['cover'])
-    # add_content(doc, data['body'])
-    #
-    # # 保存文档
-    # doc.save(output_path)
-    # print(f"新文档已保存到: {output_path}")
-
-    try:
+    if type == 1:
         apply_header_format(doc, data['header'])
         apply_footer_format(doc, data['footer'])
         add_cover(doc, data['cover'])
         add_content(doc, data['body'])
-    except Exception as e:
-        print(f"生成文件失败，异常信息：{e}")
-    finally:
+
         # 保存文档
         doc.save(output_path)
         print(f"新文档已保存到: {output_path}")
+    if type == 2:
+        try:
+            apply_header_format(doc, data['header'])
+            apply_footer_format(doc, data['footer'])
+            add_cover(doc, data['cover'])
+            add_content(doc, data['body'])
+        except Exception as e:
+            print(f"生成文件失败，异常信息：{e}")
+        finally:
+            # 保存文档
+            doc.save(output_path)
+            print(f"新文档已保存到: {output_path}")
 
 
 if __name__ == '__main__':

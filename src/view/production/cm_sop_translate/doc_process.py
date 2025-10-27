@@ -183,7 +183,7 @@ class DocumentContent:
                             fallback = inner_run[1]
                             pict = fallback[0]
                             shape = pict[0]  # 内部图形
-                            print("图形数据:", shape.items())
+                            # print("图形数据:", shape.items())
                             # textbox = list(shape) # shape内部是否有文本，需判断
                             # if textbox:
                             #     textbox = textbox[0]
