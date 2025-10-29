@@ -2,7 +2,7 @@ import datetime
 import os
 
 from docx import Document
-from docx.enum.text import WD_TAB_ALIGNMENT
+from docx.enum.text import WD_TAB_ALIGNMENT, WD_PARAGRAPH_ALIGNMENT
 from docx.shared import Inches
 
 
@@ -44,13 +44,39 @@ def set_custom_tab_stops():
 
     return doc
 
+def set_custom_2():
+    from docx import Document
+    from docx.shared import Cm
+    from docx.enum.text import WD_TAB_ALIGNMENT, WD_TAB_LEADER
+
+    document = Document()
+    paragraph = document.add_paragraph('\t制表符')
+    paragraph_format = paragraph.paragraph_format
+    tab_stops = paragraph_format.tab_stops
+    # tab_stop = tab_stops.add_tab_stop(Cm(5.0))  # 插入制表符
+    # print(tab_stop.position)  # 1800225
+    # print(tab_stop.position.cm)  # 5.000625
+    tab_stop = tab_stops.add_tab_stop(Cm(10.0), alignment=WD_TAB_ALIGNMENT.RIGHT,
+                                      leader=WD_TAB_LEADER.DOTS)  # 右对齐，前导字符为点
+    # tab_stop = tab_stops.add_tab_stop(Cm(10.0), alignment=WD_TAB_ALIGNMENT.RIGHT, leader=WD_TAB_LEADER.DOTS)  # 右对齐，前导字符为点
+
+    document.save('test.docx')  # 保存
+
 
 if __name__ == '__main__':
-    doc = set_custom_tab_stops()
-    output_folder = r"D:\Code\Project\tools\data\temp"
     current_time = datetime.datetime.now().strftime('%y%m%d%H%M%S')
+    file_path = r"D:\Code\Project\tools\data\temp"
+    file = os.path.join(file_path, f'test_{current_time}.docx')
 
-    file_base_name = 'test2.docx'
-    output_file = output_folder + "/" + file_base_name.replace(".docx", f"_translate_{current_time}.docx")
+    doc = Document()
+    doc.settings.odd_and_even_pages_header_footer = True
 
-    doc.save(output_file)
+    for section in doc.sections:
+        section.different_first_page_header_footer = True
+        first_footer = section.first_page_footer
+        first_footer.paragraphs[0].add_run("这是首页！")
+        # first_footer.paragraphs[0].font.bold = True
+        # first_footer.paragraphs[0].add_run().font.size = Pt(36.0)
+        first_footer.paragraphs[0].alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+
+    doc.save(file)

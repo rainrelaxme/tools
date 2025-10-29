@@ -1,143 +1,63 @@
-import datetime
+# __author__ = "laufing"
+# 抽取 docx 中的图片
+from typing import List
 from docx import Document
-from docx.shared import Pt, Inches, Cm
-from docx.oxml.ns import qn
-
-# 1.记录合并单元格的位置
-# 2.应用合并单元格的位置
-# 3.创建文档
-
-def get_merge_cells_info(table):
-    merged_cells = []
-
-    data = []
-    for table_index, table in enumerate(doc.tables):
-        data.append([])
-        for row_index, row in enumerate(table.rows):
-            data[-1].append([])
-            for col_index, cell in enumerate(row.cells):
-                data[-1][-1].append(cell)
-        print(data)
+from docx.enum.shape import WD_INLINE_SHAPE_TYPE
+from docx.image.image import Image
+from docx.oxml import CT_Inline, CT_GraphicalObject, CT_GraphicalObjectData, CT_Picture, CT_BlipFillProperties, CT_Blip, \
+    CT_R
 
 
-def apply_merged_cells(table, merged_cells_info):
-    start_cell = table.rows[0].cells[0]
-    end_cell = table.rows[0].cells[2]
-    start_cell.merge(end_cell)
+def extract_pics(file_path: str) -> None:
+    doc = Document(file_path)
+    for idx, shape in enumerate(doc.inline_shapes):
+        # 获取图片的rid
+        rid = shape._inline.graphic.graphicData.pic.blipFill.blip.embed
+        # 图片的名称
+        name = shape._inline.docPr.name
+        # 根据rid获取图片对象
+        image_obj = doc.part.rels.get(rid).target_part.image
+        print("image:", image_obj)
+        print("file_name:", image_obj.filename)
+        print("扩展名:", image_obj.ext)
+        # print("图片二进制数据:", image_obj.blob)
+        print("图片二进制数据hash:", image_obj.sha1)
+        print("内容类型:", image_obj.content_type)
 
-    start_cell_vertical = table.rows[1].cells[0]
-    end_cell_vertical = table.rows[2].cells[1]
-    start_cell_vertical.merge(end_cell_vertical)
+        print("像素宽高{}x{}:".format(image_obj.px_width, image_obj.px_height))
+        print("分辨率{} x {}".format(image_obj.horz_dpi, image_obj.vert_dpi))
+        # 解析图片信息
+        width = shape.width,  # Lendth对象  可以继续调用.inches/.pt/.cm
+        height = shape.height
+
+        print("\n")
 
 
-def get_table_size(table):
-    cells = []
-    for row_index, row in enumerate(table.rows):
-        for col_index, cell in enumerate(row.cells):
-            # print(f"({row_index}, {col_index})")
-
-            cell_info = {
-                'row': row_index,
-                'col': col_index,
-                'width': cell.width,
-                'content': cell.text
-            }
-            cells.append(cell_info)
-    print(cells)
-
-
-def get_paper_size(doc):
-    section = doc.sections[0]
-    # 获取的尺寸说是twip，但是换算1cm=567twip，不对。
-    paper_size = {
-        'orientation': section.orientation,
-        'page_width': section.page_width,
-        'page_height': section.page_height,
-        'top_margin': section.top_margin,
-        'bottom_margin': section.bottom_margin,
-        'left_margin': section.left_margin,
-        'right_margin': section.right_margin,
-    }
-    print("paper_size", paper_size)
-
-    return paper_size
+def extract_shapes(file_path: str) -> None:
+    """ 抽取图形 """
+    doc = Document(file_path)
+    # 在段落中抽取图形
+    for idx, para in enumerate(doc.element.body):
+        for run in para:
+            # 找到run
+            if isinstance(run, CT_R):
+                for inner_run in run:
+                    tag_name = inner_run.tag.split("}")[1]
+                    if tag_name == "AlternateContent":  # lxml.etree._Element对象
+                        fallback = inner_run[1]
+                        pict = fallback[0]
+                        shape = pict[0]  # 内部图形
+                        print("图形数据:", shape.items())
+                        # textbox = list(shape) # shape内部是否有文本，需判断
+                        # if textbox:
+                        #     textbox = textbox[0]
+                        #     # 图形内的段落文本
+                        #     para_list = list(textbox[0])
+                        #     print("图形内部文本:", [para.text for para in para_list])
 
 
 if __name__ == '__main__':
-    datetime = datetime.datetime.now().strftime('%y%m%d%H%M%S')
-    input_file = f"../../../file/test.docx"
-    output_file = f"../../../file/temp/outputxxx.docx"
-    doc = Document(input_file)
+    word_path = r"F:\Code\Project\tools\data\test\13.docx"
+    extract_pics(word_path)
+    extract_shapes(word_path)
 
-    get_paper_size(doc)
-
-
-    # new_doc = Document()
-    #
-    # table = new_doc.add_table(rows=5, cols=3)
-    # table.style = 'Table Grid'
-    #
-    # table.cell(0,0).width = Inches(3.6)
-    # table.cell(0,1).width = Inches(2.5)
-    # table.cell(0,1).width = Inches(2.5)
-
-    # table.cell(1,0).merge(table.cell(1,1))
-    # table.cell(1, 0).width = Inches(3)
-
-    # new_doc.save(output_file)
-    # print(f"新文档已保存到: {output_file}")
-
-
-
-
-def set_ziti(doc):
-    para = doc.add_paragraph()
-
-    run = para.add_run('testn\n你好')
-    # run1 = para.add_run('你好，鲍老师')
-    # run2 = para.add_run('test text content.')
-
-    # run.font.name = 'Times New Roman'
-
-    run.font.name = 'Times New Roman'
-    run.element.rPr.rFonts.set(qn('w:eastAsia'), u'楷体')
-    run.font.size = Pt(36)
-
-    # run1.font.name = '宋体'
-    # run1.font.size = Pt(36)
-    #
-    # run2.font.name = '宋体'
-    # run2.font.size = Pt(12)
-
-    doc.save(output_file)
-
-
-def doc_to_docx(doc_path, docx_path=None):
-    """
-    将doc文件转换为docx格式
-
-    Args:
-        doc_path: 输入的doc文件路径
-        docx_path: 输出的docx文件路径，默认为None（自动生成）
-    """
-    # 如果未指定输出路径，自动生成
-    if docx_path is None:
-        docx_path = doc_path.replace('.doc', '.docx')
-
-    # 启动Word应用程序
-    word = wc.Dispatch('Word.Application')
-    word.Visible = False  # 不显示Word界面
-
-    try:
-        # 打开doc文档
-        doc = word.Documents.Open(doc_path)
-        # 另存为docx格式
-        doc.SaveAs(docx_path, FileFormat=16)  # 16表示docx格式
-        doc.Close()
-        print(f"转换成功: {doc_path} -> {docx_path}")
-        return True
-    except Exception as e:
-        print(f"转换失败: {e}")
-        return False
-    finally:
-        word.Quit()
