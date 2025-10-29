@@ -33,3 +33,4 @@ GLOSSARY = {
         '越南语': 'glossary_vi.json',
     }
 }
+

@@ -60,6 +60,7 @@ def docx_translate(language):
             output_file = os.path.join(output_folder, output_filename)
 
             print(f"********************start at {current_time}********************")
+
             # 1. 读取原文档内容
             doc = Document(input_file)
             new_doc = DocumentContent(doc)
@@ -102,14 +103,17 @@ def docx_translate(language):
             log_path = os.path.join(output_folder, "log.txt")
             log_pic = ""
             log_shape = ""
+            error_doc = ""
             current_time = datetime.datetime.now().strftime('%y-%m-%d %H:%M:%S')
             if len(pictures) > 0:
                 log_pic = f"{current_time}: {filename}存在{len(pictures)}张图片！\n"
             if len(shapes) > 0:
                 log_shape = f"{current_time}: {filename}存在{len(shapes)}个形状！\n"
-            if (log_pic+log_shape).strip():
+            if len(new_doc.errors) > 0:
+                error_doc = f"{current_time}: {filename}中{new_doc.errors}\n"
+            if (log_pic+log_shape+error_doc).strip():
                 with open(log_path, "a", encoding="utf-8") as f:
-                    f.write(log_pic+log_shape)
+                    f.write(log_pic+log_shape+error_doc)
             print(f"  已完成翻译: {output_filename}")
 
     print(f"所有文件处理完成！输出目录: {output_folder}")

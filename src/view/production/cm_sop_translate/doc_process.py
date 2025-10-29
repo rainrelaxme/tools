@@ -10,6 +10,8 @@
 """
 import datetime
 import os
+import sys
+
 from docx import Document
 from docx.enum.section import WD_ORIENTATION
 from docx.enum.table import WD_TABLE_ALIGNMENT
@@ -26,6 +28,7 @@ from src.view.production.cm_sop_translate.template import apply_cover_template, 
 class DocumentContent:
     def __init__(self, doc, new_doc=None):
         self.source_doc = doc
+        self.errors = []
 
     def get_content(self, doc):
         """
@@ -113,8 +116,16 @@ class DocumentContent:
         # rows = []
         cells_data = []
         cells = []
+
         for row_index, row in enumerate(table.rows):
             # row_data = {'cells': []}
+            # 由于人会拖动单元格，导致超出新产生一列。同时在上方的行内是不会显示此列的。用row.grid_cols_before记录此行前有多少列，用row.grid_cols_after记录此行后有多少列
+            if row.grid_cols_before > 0 or row.grid_cols_after > 0:
+                error_info = f"{table}表格前后列数不一致！！！"
+                print(error_info)
+                self.errors.append(error_info)
+
+            # 判断合并单元格
             for cell_index, cell in enumerate(row.cells):
                 # 只能判断横向合并,还有种方法，通过合并的两个单元格相等判断
                 cells.append(cell)
@@ -356,15 +367,17 @@ class DocumentContent:
     def flag_main_text(self, original_data):
         """
         标记出来表格的主文本所在的单元格，因为修订记录和主文本原文件中是同一个表格，要切分开。
-        采用的方法是第二个表格中的第一次合并单元格，此单元格应空行很多行之后，而且正文开头是“目的”？
+        采用的方法是第二个表格中的第一次合并单元格，此单元格前应空行很多行，而且正文开头是“目的”？
         """
         for item in original_data:
             # 第二个表格，而且表格第一格中文字内容是“版本”，就认为是修订记录表格
+
             if item['type'] == 'table' and item['element_index'] == 1 and item["cells"][0]["content"][0]['text'].strip() == "版本":
+                cols = item['cols']
                 item['flag'] = 'revision_record'
                 for cell in item['cells']:
-                    # 合并的单元格就认为是正文主体
-                    if cell["grid_span"] > 1:
+                    # 合并的单元格，且合并了所有列，且第一行的正文包含“目的”，就认为是正文主体
+                    if cell["grid_span"] > 1 and cell["grid_span"] == cols:  # 全部行合并
                         cell["flag"] = "main_text"
         return original_data
 
@@ -525,7 +538,8 @@ def add_content(block, data):
 
                                 # 应用表格内容
                                 for sub_cell_idx, sub_cell_data in enumerate(content['cells']):
-                                    if (sub_cell_data['grid_span'] > 1 and sub_cell_data['is_merge_start']) or sub_cell_data['grid_span'] == 1:
+                                    if (sub_cell_data['grid_span'] > 1 and sub_cell_data['is_merge_start']) or \
+                                            sub_cell_data['grid_span'] == 1:
                                         sub_cell = sub_table.rows[sub_cell_data["row"]].cells[sub_cell_data["col"]]
                                         # 清空默认段落
                                         for sub_paragraph in sub_cell.paragraphs:
@@ -699,6 +713,7 @@ def apply_table_format(table, table_data):
                 start_cell = table.rows[row].cells[col]
                 end_cell = table.rows[row].cells[col + cell['grid_span'] - 1]
                 start_cell.merge(end_cell)
+
 
 def add_paragraph_translation(original_data, translator, language):
     """添加翻译段落"""
