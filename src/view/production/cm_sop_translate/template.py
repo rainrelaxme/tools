@@ -9,18 +9,16 @@
 """
 
 import datetime
-import json
 import os
 import win32com.client as wc
-from win32com.client import constants
 from docx import Document
 from docx.enum.table import WD_TABLE_ALIGNMENT
-from docx.enum.text import WD_TAB_ALIGNMENT, WD_LINE_SPACING, WD_PARAGRAPH_ALIGNMENT, WD_ALIGN_PARAGRAPH, WD_BREAK
+from docx.enum.text import WD_TAB_ALIGNMENT, WD_LINE_SPACING, WD_PARAGRAPH_ALIGNMENT, WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, Cm, RGBColor
 
-from config.template_content import FOOTER_FORMAT, HEADER_FORMAT
+from config.doc_template import FOOTER_FORMAT, HEADER_FORMAT
 
 
 def apply_template(body_data, header_data=None, footer_data=None, cover_data=None):

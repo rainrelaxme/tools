@@ -1,16 +1,27 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+@Project : tools
+@File    : translator.py
+@Author  : Shawn
+@Date    : 2025/10/11 9:31
+@Info    : Description of this file
+
+"""
+
 import json
 import os
 
 from openai import OpenAI
 
-from config.private import API_KEY
-from config.config import GLOSSARY
+from config.config import DS_KEY, GLOSSARY
 
 
 class Translator:
     def __init__(self):
-        self.api_key = API_KEY
+        self.api_key = DS_KEY
         self.base_url = "https://api.deepseek.com"
+        self.glossary_folder = GLOSSARY['dir']
 
     def translate(self, text: str, language, display=False):
         # 先过滤是否在词库中
@@ -43,8 +54,7 @@ class Translator:
         如果是指定的专有名词，在词库中的，则不再提交deepseek翻译。
         """
         try:
-            # glossary_folder = r"D:\Code\Project\tools\config"
-            glossary_folder = GLOSSARY['dir']
+            glossary_folder = self.glossary_folder
             if not os.path.isdir(glossary_folder):
                 print(f"词库路径不存在，请检查{glossary_folder}，采用AI翻译")
                 return False

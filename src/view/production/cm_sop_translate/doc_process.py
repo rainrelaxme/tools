@@ -21,8 +21,7 @@ from docx.oxml.ns import qn
 from docx.oxml import OxmlElement, CT_R
 from win32com import client as wc
 
-from src.view.production.cm_sop_translate.template import apply_cover_template, apply_preamble_format, \
-    apply_approveTable_format
+from src.view.production.cm_sop_translate.template import  apply_preamble_format, apply_approveTable_format
 
 
 class DocumentContent:
