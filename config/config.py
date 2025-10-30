@@ -24,10 +24,17 @@ VALID_ACCOUNTS = {
 
 # 词库位置
 GLOSSARY = {
-    # 'dir': './config',
+    # 'dir': './_internal/config',
     'dir': 'D:/Code/Project/tools/config',
     'languages': {
         '英语': 'glossary_en.json',
         '越南语': 'glossary_vi.json',
     }
 }
+
+# 日志位置
+LOG_PATH = {
+    'path': './logs',
+    # 'path': 'D:/Code/Project/tools/logs',
+}
+

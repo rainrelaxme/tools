@@ -403,22 +403,6 @@ def apply_header_format(doc, header_data):
                     if cell["row"] == 1 and cell["col"] == 0:
                         new_para.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
 
-
-
-            # for row in item["rows"]:
-            #     for cell in row["cells"]:
-            #         new_cell = table.cell(cell["row"], cell["col"])
-            #         # 先清除段落内容
-            #         for para in new_cell.paragraphs:
-            #             p = para._element
-            #             p.getparent().remove(p)
-            #         new_cell.width = Inches(cell["width"])
-            #         for para in cell["content"]:
-            #             new_para = new_cell.add_paragraph()
-            #             run = new_para.add_run(para["text"])
-            #             run.font.size = Pt(12.0)
-            #             run.font.name = 'Times New Roman'
-            #             run.element.rPr.rFonts.set(qn('w:eastAsia'), u'宋体')
     # 1-1
     set_cell_border(
         table.cell(0, 0),
@@ -704,22 +688,22 @@ def set_cell_border(cell, **kwargs):
                 if key in edge_data:
                     element.set(qn(f'w:{key}'), str(edge_data[key]))
 
-def main(data):
-    current_time = datetime.datetime.now().strftime('%y%m%d%H%M%S')
-    file_path = r"F:\Code\Project\tools\data\temp"
-    file = os.path.join(file_path, f'test_{current_time}.docx')
-
-    doc = Document()
-    apply_footer_format(doc, data)
-    apply_header_format(doc, data)
-
-    i = 1
-    while i < 30:
-        doc.add_paragraph().add_run(f"这是第{i}段")
-        i += 1
-
-    doc.save(file)
-    print(f"{file} was saved successfully.")
+# def main(data):
+#     current_time = datetime.datetime.now().strftime('%y%m%d%H%M%S')
+#     file_path = r"F:\Code\Project\tools\data\temp"
+#     file = os.path.join(file_path, f'test_{current_time}.docx')
+#
+#     doc = Document()
+#     apply_footer_format(doc, data)
+#     apply_header_format(doc, data)
+#
+#     i = 1
+#     while i < 30:
+#         doc.add_paragraph().add_run(f"这是第{i}段")
+#         i += 1
+#
+#     doc.save(file)
+#     print(f"{file} was saved successfully.")
 
 
 # if __name__ == '__main__':

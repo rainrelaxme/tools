@@ -18,8 +18,6 @@ def extract_pics(block):
 
 
 
-
-
 # 创建一个新的Word文档
 new_doc = Document()
 

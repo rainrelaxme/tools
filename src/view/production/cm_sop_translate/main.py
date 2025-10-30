@@ -11,9 +11,12 @@
 import datetime
 import os
 import sys
+import logging
 
 from docx import Document
 
+from src.common.log import setup_logger
+from config.config import LOG_PATH
 from src.view.production.cm_sop_translate.auth import check_license
 from src.view.production.cm_sop_translate.doc_process import doc_to_docx, DocumentContent, set_paper_size_format, \
     add_content, add_cover_translation, add_paragraph_translation, add_cover, add_table_translation, \
@@ -22,17 +25,22 @@ from src.view.production.cm_sop_translate.template import apply_header_format, a
 from src.view.production.cm_sop_translate.translator import Translator
 
 
+logger = setup_logger(log_dir=LOG_PATH['path'], name='logs', level=logging.INFO)
+
+
 def text_translate(language):
     original_text = input("请输入待翻译内容：\n").strip()
     translator = Translator()
     for lang in language:
         translator.translate(original_text, language=lang)
-        # print(f"{lang}: {translator.translate(original_text, language=lang)}")
+        logger.info(f"{lang}: {translator.translate(original_text, language=lang)}")
 
 
 def docx_translate(language):
     # 设置输入文件夹路径
-    input_folder = input("请输入待翻译的文件目录：\n")
+    input_folder = ""
+    while input_folder.strip() == '':
+        input_folder = input("请输入待翻译的文件目录：\n")
 
     # 设置输出文件夹路径（二级文件夹）
     output_folder = os.path.join(input_folder, "translate_output")
@@ -43,7 +51,7 @@ def docx_translate(language):
 
     # 遍历文件夹中的所有文件
     for filename in os.listdir(input_folder):
-        print(f"正在处理文件: {filename}")
+        logger.info(f"正在处理文件: {filename}")
 
         # 检查文件是否为Word文档（.docx格式）,若是.doc文件则转为.docx
         if filename.endswith('.doc') and not filename.startswith('~$'):  # 忽略临时文件
@@ -100,7 +108,7 @@ def docx_translate(language):
             create_new_document(formatted_content, output_file, 2)
 
             # 7. 记录此文件存在图片或者形状
-            log_path = os.path.join(output_folder, "log.txt")
+            log_path = os.path.join(output_folder, "warning.txt")
             log_pic = ""
             log_shape = ""
             error_doc = ""
@@ -114,9 +122,9 @@ def docx_translate(language):
             if (log_pic+log_shape+error_doc).strip():
                 with open(log_path, "a", encoding="utf-8") as f:
                     f.write(log_pic+log_shape+error_doc)
-            print(f"  已完成翻译: {output_filename}")
+            logger.info(f"已完成翻译: {output_filename}")
 
-    print(f"所有文件处理完成！输出目录: {output_folder}")
+    logger.info(f"所有文件处理完成！输出目录: {output_folder}")
 
 
 def create_new_document(data, output_path, type):
@@ -134,7 +142,7 @@ def create_new_document(data, output_path, type):
 
         # 保存文档
         doc.save(output_path)
-        print(f"新文档已保存到: {output_path}")
+        logger.info(f"新文档已保存到: {output_path}")
     if type == 2:
         try:
             apply_header_format(doc, data['header'])
@@ -142,11 +150,11 @@ def create_new_document(data, output_path, type):
             add_cover(doc, data['cover'])
             add_content(doc, data['body'])
         except Exception as e:
-            print(f"生成文件失败，异常信息：{e}")
+            logger.error(f"生成文件失败，异常信息：{e}")
         finally:
             # 保存文档
             doc.save(output_path)
-            print(f"新文档已保存到: {output_path}")
+            logger.info(f"新文档已保存到: {output_path}")
 
 
 if __name__ == '__main__':

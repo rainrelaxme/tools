@@ -11,6 +11,7 @@
 import datetime
 import os
 import sys
+import logging
 
 from docx import Document
 from docx.enum.section import WD_ORIENTATION
@@ -21,7 +22,11 @@ from docx.oxml.ns import qn
 from docx.oxml import OxmlElement, CT_R
 from win32com import client as wc
 
+from config.config import LOG_PATH
+from src.common.log import setup_logger
 from src.view.production.cm_sop_translate.template import  apply_preamble_format, apply_approveTable_format
+
+logger = setup_logger(log_dir=LOG_PATH['path'], name='logs', level=logging.INFO)
 
 
 class DocumentContent:
@@ -121,7 +126,7 @@ class DocumentContent:
             # 由于人会拖动单元格，导致超出新产生一列。同时在上方的行内是不会显示此列的。用row.grid_cols_before记录此行前有多少列，用row.grid_cols_after记录此行后有多少列
             if row.grid_cols_before > 0 or row.grid_cols_after > 0:
                 error_info = f"{table}表格前后列数不一致！！！"
-                print(error_info)
+                logger.error(error_info)
                 self.errors.append(error_info)
 
             # 判断合并单元格
@@ -138,7 +143,8 @@ class DocumentContent:
                 cell_content = {
                     'row': row_index,
                     'col': cell_index,
-                    'width': cell.width.inches,
+                    'width': self.get_cell_size(cell, table, row_index, cell_index),
+                    # 'width': cell.width.inches,
                     'grid_span': grid_span,
                     'is_merge_start': is_merge_start,
                     "content": self.get_content(cell)
@@ -146,6 +152,16 @@ class DocumentContent:
                 cells_data.append(cell_content)
 
         return cells_data
+
+    def get_cell_size(self, cell, table, row_idx, col_idx):
+        """获取单元格的宽高"""
+        if cell.width:
+            width = cell.width.inches
+        else:
+            # 如果从单元格获取不到，则获取此列的宽度
+            width = table.columns[col_idx].width.inches
+        return width
+
 
     def extract_pics(self, doc):
         pic_list = []
@@ -957,10 +973,10 @@ def doc_to_docx(doc_path, docx_path=None):
         # 另存为docx格式
         doc.SaveAs(docx_path, FileFormat=16)  # 16表示docx格式
         doc.Close()
-        print(f"转换成功: {doc_path} -> {docx_path}")
+        logger.info(f"转换成功: {doc_path} -> {docx_path}")
         return docx_path
     except Exception as e:
-        print(f"转换失败: {e}")
+        logger.error(f"转换失败: {e}")
         return False
     finally:
         word.Quit()

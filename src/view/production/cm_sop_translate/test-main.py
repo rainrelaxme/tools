@@ -9,10 +9,12 @@
 
 """
 import datetime
+import logging
 import os
 
 from docx import Document
 
+from src.common.log import setup_logger
 from src.view.production.cm_sop_translate.doc_process import DocumentContent, add_cover_translation, \
     add_paragraph_translation, \
     add_table_translation, add_header_translation, add_footer_translation
@@ -25,12 +27,12 @@ if __name__ == "__main__":
     current_time = datetime.datetime.now().strftime('%y%m%d%H%M%S')
     language = ['英语', '越南语']
 
-    input_file = r"D:\Code\Project\tools\data\test\20.docx"
-
+    input_file = r"D:\Code\Project\tools\data\test\46-1.docx"
     output_folder = r"D:\Code\Project\tools\data\temp"
     file_base_name = os.path.basename(input_file)
     output_file = output_folder + "/" + file_base_name.replace(".docx", f"_translate_{current_time}.docx")
 
+    logger = setup_logger(log_dir='D:\\Code\\Project\\tools\\logs', name='logs', level=logging.INFO)
     translator = Translator()
     print(f"********************start at {current_time}********************")
     # 1. 读取原文档内容
@@ -70,4 +72,4 @@ if __name__ == "__main__":
     # 6. 创建新文档
     create_new_document(formatted_content, output_file, 1)
 
-    print(f"********************end********************")
+    logger.info(f"********************end********************")
