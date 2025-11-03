@@ -14,21 +14,21 @@ import os
 
 from docx import Document
 
-from src.common.log import setup_logger
-from src.view.production.cm_sop_translate.doc_process import DocumentContent, add_cover_translation, \
+from modules.common.log import setup_logger
+from modules.cm_sop_translate.doc_process import DocumentContent, add_cover_translation, \
     add_paragraph_translation, \
     add_table_translation, add_header_translation, add_footer_translation
-from src.view.production.cm_sop_translate.main import create_new_document
-from src.view.production.cm_sop_translate.template import apply_template
-from src.view.production.cm_sop_translate.translator import Translator
+from modules.cm_sop_translate.main import create_new_document
+from modules.cm_sop_translate.template import apply_template
+from modules.cm_sop_translate.translator import Translator
 
 if __name__ == "__main__":
     # 获取当前时间戳
     current_time = datetime.datetime.now().strftime('%y%m%d%H%M%S')
     language = ['英语', '越南语']
 
-    input_file = r"D:\Code\Project\tools\data\test\46-1.docx"
-    output_folder = r"D:\Code\Project\tools\data\temp"
+    input_file = r"F:\Code\Project\tools\data\test\33.docx"
+    output_folder = r"F:\Code\Project\tools\data\temp"
     file_base_name = os.path.basename(input_file)
     output_file = output_folder + "/" + file_base_name.replace(".docx", f"_translate_{current_time}.docx")
 

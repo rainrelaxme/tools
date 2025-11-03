@@ -14,7 +14,7 @@ import os
 
 from openai import OpenAI
 
-from config.config import DS_KEY, GLOSSARY
+from conf.conf import DS_KEY, GLOSSARY
 
 
 class Translator:

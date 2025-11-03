@@ -8,23 +8,19 @@
 @Date   : 2025/9/24 02:00
 @Info   : 实现word文档的翻译，包括段落、表格，并将翻译后的文本置于原文本后，且保持原文档格式。其中doc转换为doc利用了win32包，仅支持在windows系统。
 """
-import datetime
-import os
-import sys
 import logging
 
-from docx import Document
 from docx.enum.section import WD_ORIENTATION
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.shared import RGBColor, Pt, Inches, Cm
 from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_BREAK
 from docx.oxml.ns import qn
-from docx.oxml import OxmlElement, CT_R
+from docx.oxml import CT_R
 from win32com import client as wc
 
-from config.config import LOG_PATH
-from src.common.log import setup_logger
-from src.view.production.cm_sop_translate.template import  apply_preamble_format, apply_approveTable_format
+from conf.conf import LOG_PATH
+from modules.common.log import setup_logger
+from modules.cm_sop_translate.template import apply_preamble_format, apply_approveTable_format
 
 logger = setup_logger(log_dir=LOG_PATH['path'], name='logs', level=logging.INFO)
 
@@ -161,7 +157,6 @@ class DocumentContent:
             # 如果从单元格获取不到，则获取此列的宽度
             width = table.columns[col_idx].width.inches
         return width
-
 
     def extract_pics(self, doc):
         pic_list = []
@@ -387,7 +382,8 @@ class DocumentContent:
         for item in original_data:
             # 第二个表格，而且表格第一格中文字内容是“版本”，就认为是修订记录表格
 
-            if item['type'] == 'table' and item['element_index'] == 1 and item["cells"][0]["content"][0]['text'].strip() == "版本":
+            if item['type'] == 'table' and item['element_index'] == 1 and item["cells"][0]["content"][0][
+                'text'].strip() == "版本":
                 cols = item['cols']
                 item['flag'] = 'revision_record'
                 for cell in item['cells']:

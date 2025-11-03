@@ -57,7 +57,7 @@ def extract_shapes(file_path: str) -> None:
 
 
 if __name__ == '__main__':
-    word_path = r"F:\Code\Project\tools\data\test\13.docx"
+    word_path = r"/data/test/13.docx"
     extract_pics(word_path)
     extract_shapes(word_path)
 

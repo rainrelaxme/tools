@@ -15,14 +15,14 @@ import logging
 
 from docx import Document
 
-from src.common.log import setup_logger
-from config.config import LOG_PATH
-from src.view.production.cm_sop_translate.auth import check_license
-from src.view.production.cm_sop_translate.doc_process import doc_to_docx, DocumentContent, set_paper_size_format, \
+from modules.common.log import setup_logger
+from conf.conf import LOG_PATH
+from modules.cm_sop_translate.auth import check_license
+from modules.cm_sop_translate.doc_process import doc_to_docx, DocumentContent, set_paper_size_format, \
     add_content, add_cover_translation, add_paragraph_translation, add_cover, add_table_translation, \
     add_header_translation, add_footer_translation
-from src.view.production.cm_sop_translate.template import apply_header_format, apply_footer_format, apply_template
-from src.view.production.cm_sop_translate.translator import Translator
+from modules.cm_sop_translate.template import apply_header_format, apply_footer_format, apply_template
+from modules.cm_sop_translate.translator import Translator
 
 
 logger = setup_logger(log_dir=LOG_PATH['path'], name='logs', level=logging.INFO)

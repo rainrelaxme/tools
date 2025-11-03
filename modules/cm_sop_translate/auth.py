@@ -10,7 +10,7 @@
 
 import getpass
 
-from config.config import VALID_ACCOUNTS
+from conf.conf import VALID_ACCOUNTS
 
 
 def login():
