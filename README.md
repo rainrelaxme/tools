@@ -21,8 +21,6 @@ git clone https://github.com/rainrelaxme/tools.git
 - Installation dependencies
 
 ```bash
-cd tools
-
 conda activate General  # conda环境
 
 pip install -r requirements.txt # 安装包
@@ -30,7 +28,7 @@ pip install -r requirements.txt # 安装包
 -  Create package
 
 ```bash
-cd tools\scripts
+cd scripts
 
 pyinstaller package.spec
 ```

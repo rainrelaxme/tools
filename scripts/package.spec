@@ -4,7 +4,7 @@
 block_cipher = None
 
 py_files = [
-    '..\\src\\view\\production\\cm_sop_translate\\main.py'
+    '..\\modules\\cm_sop_translate\\main.py'
 ]
 
 add_files = [
