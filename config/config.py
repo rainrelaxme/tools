@@ -15,7 +15,7 @@ sys.path.append(r"F:\Code\Config\Private")
 import sean
 
 # 项目根目录
-ROOT_PATH = r"F:\Code\Project\tools"
+ROOT_PATH = r"D:\Code\Project\tools"
 
 # DeepSeek KEY
 DS_KEY = sean.API_KEY

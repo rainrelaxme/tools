@@ -43,7 +43,7 @@ def login():
 def check_license():
     """简单的许可证检查（可选功能）"""
     import datetime as dt
-    expiry_date = dt.datetime(2025, 10, 31)  # 设置过期时间
+    expiry_date = dt.datetime(2025, 11, 30)  # 设置过期时间
 
     if dt.datetime.now() > expiry_date:
         print("🚫 软件许可证已过期，请联系管理员！")
