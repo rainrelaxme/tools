@@ -166,4 +166,4 @@ cython_debug/
 .config/private.py
 
 #  data
-.data
+/data/

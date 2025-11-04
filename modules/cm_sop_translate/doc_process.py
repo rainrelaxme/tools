@@ -766,72 +766,6 @@ def add_table_translation(original_data, translator, language):
                     after_table = add_table_translation(after_para, translator, language)
 
                     new_data[index]['cells'][idx]["content"] = after_table
-
-            #     new_item = item.copy()
-            #
-            # for row in item['rows']:
-            #     for cell in row['cells']:
-            #         new_cell = cell.copy()
-            #         new_cell['content'] = []
-            #
-            #         for para in cell['content']:
-            #             if para['type'] == 'paragraph':
-            #                 original_text = para['text']
-            #                 if original_text.strip():
-            #                     if (cell['grid_span'] > 1 and cell['is_merge_start']) or cell['grid_span'] == 1:
-            #                         new_cell['content'].append(para)
-            #
-            #                         # 多种语言
-            #                         for lang in language:
-            #                             new_para = para.copy()
-            #
-            #                             translated_text = translator.translate(original_text, language=lang,
-            #                                                                    display=True)
-            #                             # translated_text = original_text
-            #                             new_para['text'] = translated_text
-            #                             new_para['language'] = lang
-            #
-            #                             # 更改run里面内容
-            #                             new_run = para['runs'][0].copy()
-            #                             new_run['text'] = translated_text
-            #                             new_runs = [new_run]
-            #                             new_para['runs'] = new_runs
-            #
-            #                             new_cell['content'].append(new_para)
-            #                 if para['type'] == 'table':
-            #                     for row in item['rows']:
-            #                         for cell in row['cells']:
-            #                             new_cell = cell.copy()
-            #                             new_cell['content'] = []
-            #
-            #                             for para in cell['content']:
-            #                                 if para['type'] == 'paragraph':
-            #                                     original_text = para['text']
-            #                                     if original_text.strip():
-            #                                         if (cell['grid_span'] > 1 and cell['is_merge_start']) or cell['grid_span'] == 1:
-            #                                             new_cell['content'].append(para)
-            #
-            #                                             # 多种语言
-            #                                             for lang in language:
-            #                                                 new_para = para.copy()
-            #
-            #                                                 translated_text = translator.translate(original_text,
-            #                                                                                        language=lang,
-            #                                                                                        display=True)
-            #                                                 # translated_text = original_text
-            #                                                 new_para['text'] = translated_text
-            #                                                 new_para['language'] = lang
-            #
-            #                                                 # 更改run里面内容
-            #                                                 new_run = para['runs'][0].copy()
-            #                                                 new_run['text'] = translated_text
-            #                                                 new_runs = [new_run]
-            #                                                 new_para['runs'] = new_runs
-            #
-            #                                                 new_cell['content'].append(new_para)
-            #                         cell['content'] = new_cell['content']
-            #
-            #         cell['content'] = new_cell['content']
     return new_data
 
 
@@ -859,6 +793,9 @@ def add_cover_translation(original_data, translator, language):
 
             # 根据冒号拆分段落
             split_text = []
+            if ":" in original_text:
+                original_text = original_text.replace(":", "：")
+                item["text"] = original_text
             if ":" in original_text:
                 split_text = original_text.split(":", 1)  # 1代表只分割第一个冒号
             elif "：" in original_text:

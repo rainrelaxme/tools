@@ -33,7 +33,7 @@ GLOSSARY = {
 }
 
 # 日志位置
-LOG_PATH = LOG_PATH
+LOG_PATH = LOG_PATH["path"]
 # LOG_PATH = '../../logs'
 
 # 模板内容
