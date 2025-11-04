@@ -25,7 +25,7 @@ from modules.cm_sop_translate.template import apply_header_format, apply_footer_
 from modules.cm_sop_translate.translator import Translator
 
 
-logger = setup_logger(log_dir=LOG_PATH['path'], name='logs', level=logging.INFO)
+logger = setup_logger(log_dir=LOG_PATH, name='logs', level=logging.INFO)
 
 
 def text_translate(language):

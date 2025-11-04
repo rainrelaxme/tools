@@ -34,10 +34,7 @@ GLOSSARY = {
 
 # 日志位置
 LOG_PATH = LOG_PATH
-# LOG_PATH = {
-#     'path': '../../logs',
-#     # 'path': 'D:/Code/Project/tools/logs',
-# }
+# LOG_PATH = '../../logs'
 
 # 模板内容
 template_path = os.path.join(ROOT_PATH, 'modules', 'cm_sop_translate', 'conf', 'template.json')

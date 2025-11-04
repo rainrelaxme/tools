@@ -22,7 +22,7 @@ from conf.conf import LOG_PATH
 from modules.common.log import setup_logger
 from modules.cm_sop_translate.template import apply_preamble_format, apply_approveTable_format
 
-logger = setup_logger(log_dir=LOG_PATH['path'], name='logs', level=logging.INFO)
+logger = setup_logger(log_dir=LOG_PATH, name='logs', level=logging.INFO)
 
 
 class DocumentContent:
