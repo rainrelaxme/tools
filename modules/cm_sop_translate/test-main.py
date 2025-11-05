@@ -27,14 +27,14 @@ if __name__ == "__main__":
     current_time = datetime.datetime.now().strftime('%y%m%d%H%M%S')
     language = ['英语', '越南语']
 
-    input_file = r"D:\Code\Project\tools\data\test\C2IM-Y49-000-A00 组装过程管理程序.docx"
+    input_file = r"D:\Code\Project\tools\data\test\Q3QA-Y22-002(A00) 抽样计划作业指导书 .docx"
     output_folder = r"D:\Code\Project\tools\data\temp"
     file_base_name = os.path.basename(input_file)
     output_file = output_folder + "/" + file_base_name.replace(".docx", f"_translate_{current_time}.docx")
 
-    logger = setup_logger(log_dir='D:\\Code\\Project\\tools\\logs', name='logs', level=logging.INFO)
     translator = Translator()
     print(f"********************start at {current_time}********************")
+
     # 1. 读取原文档内容
     doc = Document(input_file)
     new_doc = DocumentContent(doc)
@@ -72,4 +72,4 @@ if __name__ == "__main__":
     # 6. 创建新文档
     create_new_document(formatted_content, output_file, 1)
 
-    logger.info(f"********************end********************")
+    print(f"********************end********************")

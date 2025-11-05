@@ -7,15 +7,21 @@
 @Date    : 2025/9/30 14:15 
 @Info    : Description of this file
 """
-
+import json
 import win32com.client as wc
+
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_TAB_ALIGNMENT, WD_LINE_SPACING, WD_PARAGRAPH_ALIGNMENT, WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, Cm, RGBColor
 
-from modules.cm_sop_translate.conf.conf import HEADER_FORMAT, FOOTER_FORMAT
+from modules.cm_sop_translate.conf.conf import TEMPLATE
+
+with open(TEMPLATE, 'r', encoding='utf-8') as f:
+    template = json.load(f)
+HEADER_FORMAT = template['header']['format']
+FOOTER_FORMAT = template['footer']['format']
 
 
 def apply_template(body_data, header_data=None, footer_data=None, cover_data=None):

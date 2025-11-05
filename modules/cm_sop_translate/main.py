@@ -24,7 +24,6 @@ from modules.cm_sop_translate.doc_process import doc_to_docx, DocumentContent, s
 from modules.cm_sop_translate.template import apply_header_format, apply_footer_format, apply_template
 from modules.cm_sop_translate.translator import Translator
 
-
 logger = setup_logger(log_dir=LOG_PATH, name='logs', level=logging.INFO)
 
 
@@ -32,14 +31,14 @@ def text_translate(language):
     original_text = input("请输入待翻译内容：\n").strip()
     translator = Translator()
     for lang in language:
-        translator.translate(original_text, language=lang)
-        logger.info(f"{lang}: {translator.translate(original_text, language=lang)}")
+        res = translator.translate(original_text, language=lang)
+        logger.info(f"{lang}: {res}")
 
 
 def docx_translate(language):
     # 设置输入文件夹路径
     input_folder = ""
-    while input_folder.strip() == '':
+    while input_folder.strip() == "":
         input_folder = input("请输入待翻译的文件目录：\n")
 
     # 设置输出文件夹路径（二级文件夹）

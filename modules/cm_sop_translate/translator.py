@@ -10,11 +10,16 @@
 """
 
 import json
+import logging
 import os
 
 from openai import OpenAI
 
+from modules.common.log import setup_logger
+from modules.cm_sop_translate.conf.conf import LOG_PATH
 from modules.cm_sop_translate.conf.conf import DS_KEY, GLOSSARY
+
+logger = setup_logger(log_dir=LOG_PATH, name='logs', level=logging.INFO)
 
 
 class Translator:
@@ -55,33 +60,35 @@ class Translator:
         """
         try:
             glossary_folder = self.glossary_folder
-            if not os.path.isdir(glossary_folder):
-                print(f"词库路径不存在，请检查{glossary_folder}，采用AI翻译")
-                return False
+            # if not os.path.isdir(glossary_folder):
+            #     print(f"词库路径不存在，请检查{glossary_folder}，采用AI翻译")
+            #     return False
 
-            if language in GLOSSARY['languages']:
-                glossary = os.path.join(glossary_folder, GLOSSARY['languages'][language])
-            else:
-                print(f"{language}词库不存在，采用AI翻译")
-                return False
+            # if language in GLOSSARY['languages']:
+            #     glossary = os.path.join(glossary_folder, GLOSSARY['languages'][language])
+            # else:
+            #     print(f"{language}该语言词库未配置，采用AI翻译。")
+            #     return False
 
-            if not os.path.isfile(glossary):
-                print(f"词库文件不存在，请检查{glossary}，采用AI翻译")
-                return False
+            glossary = os.path.join(glossary_folder, GLOSSARY['languages'][language])
+
+            # if not os.path.isfile(glossary):
+            #     print(f"词库文件不存在，请检查{glossary}，采用AI翻译。")
+            #     return False
 
             with open(glossary, "r", encoding="utf-8") as f:
-                glossary = json.load(f)
+                dicts = json.load(f)
 
             text_lite = text.replace(" ", "").replace("　", "")
 
-            if text_lite in glossary:
+            if text_lite in dicts:
                 res = glossary[text_lite]
                 print(f"{text} --> {res}")
                 return res
 
         except Exception as e:
-            print(f"词库异常，采用AI翻译")
-            return False
+            logger.error(f"词库异常{e}，将采用AI翻译")
+            # return False
 
 # 使用示例
 # if __name__ == "__main__":
