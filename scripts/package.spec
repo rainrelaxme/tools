@@ -8,7 +8,7 @@ py_files = [
 ]
 
 add_files = [
-    ('C:\\Users\\shawn\\Desktop\\config', 'config')
+    ('D:\\Code\\Project\\tools\\modules\\cm_sop_translate\\conf\\json', 'config'),
 ]
 
 a = Analysis(
@@ -31,7 +31,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='translator',
+    name='main',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

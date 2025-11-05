@@ -36,7 +36,7 @@ def setup_logger(log_dir, name, log_filename='info.log', level=logging.INFO):
         console_handler.setFormatter(formatter)
         logger.addHandler(console_handler)
 
-    logger.info('Log directory: %s', log_dir)
+    # logger.info('Log directory: %s', log_dir)
     return logger
 
 

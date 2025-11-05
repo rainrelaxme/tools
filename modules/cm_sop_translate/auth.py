@@ -10,7 +10,7 @@
 
 import getpass
 
-from conf.conf import VALID_ACCOUNTS
+from modules.cm_sop_translate.conf.conf import VALID_ACCOUNTS
 
 
 def login():

@@ -18,7 +18,7 @@ from docx.oxml.ns import qn
 from docx.oxml import CT_R
 from win32com import client as wc
 
-from conf.conf import LOG_PATH
+from modules.cm_sop_translate.conf.conf import LOG_PATH
 from modules.common.log import setup_logger
 from modules.cm_sop_translate.template import apply_preamble_format, apply_approveTable_format
 

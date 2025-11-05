@@ -24,7 +24,6 @@ VALID_ACCOUNTS = {
 # 词库位置
 GLOSSARY = {
     # 'dir': './_internal/config',
-    # 'dir': 'F:/Code/Project/tools/modules/cm_sop_translate/conf',
     'dir': os.path.join(ROOT_PATH, 'modules', 'cm_sop_translate', 'conf'),
     'languages': {
         '英语': 'glossary_en.json',
@@ -34,10 +33,11 @@ GLOSSARY = {
 
 # 日志位置
 LOG_PATH = LOG_PATH["path"]
-# LOG_PATH = '../../logs'
+# LOG_PATH = './logs'
 
 # 模板内容
 template_path = os.path.join(ROOT_PATH, 'modules', 'cm_sop_translate', 'conf', 'template.json')
+# template_path = './_internal/config/template.json'
 with open(template_path, 'r', encoding='utf-8') as f:
     template = json.load(f)
 HEADER_FORMAT = template['header']['format']

@@ -15,7 +15,7 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, Cm, RGBColor
 
-from conf.conf import HEADER_FORMAT, FOOTER_FORMAT
+from modules.cm_sop_translate.conf.conf import HEADER_FORMAT, FOOTER_FORMAT
 
 
 def apply_template(body_data, header_data=None, footer_data=None, cover_data=None):
