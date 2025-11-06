@@ -10,7 +10,7 @@
 
 import os
 
-from config.config import DS_KEY, ROOT_PATH
+from config.kawang import DS_KEY, ROOT_PATH
 
 # DeepSeek KEY
 DS_KEY = DS_KEY

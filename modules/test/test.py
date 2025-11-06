@@ -1,10 +1,13 @@
-import datetime
-from docx import Document
+from modules.user.user import User
+from config.kawang import DATABASE
 
-input_file = r"D:\Code\Project\tools\data\test\C3LG-Z03-002(A00) 备品备件与低值易耗品管理规定.docx"
-doc = Document(input_file)
 
-for table in doc.sections[0].header.tables:
-    for row in table.rows:
-        for cell in row.cells:
-            print(cell.text)
+def main():
+    user = User(DATABASE)
+
+    print("功能菜单如下：\n"
+          "1. 创建用户\n"
+          "2. 获取用户信息\n"
+          "3. 更新用户信息\n"
+          "4. \n"
+          "5. \n")
