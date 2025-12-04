@@ -17,7 +17,7 @@ from docx import Document
 
 from modules.common.log import setup_logger
 from modules.cm_sop_translate.conf.conf import LOG_PATH
-from modules.cm_sop_translate.auth import check_license
+from modules.cm_sop_translate.auth import check_license, login
 from modules.cm_sop_translate.doc_process import doc_to_docx, DocumentContent, set_paper_size_format, \
     add_content, add_cover_translation, add_paragraph_translation, add_cover, add_table_translation, \
     add_header_translation, add_footer_translation
@@ -162,8 +162,8 @@ if __name__ == '__main__':
     print("=" * 100)
     print("注意：仅支持运行于windows系统！！！")
     # 首先进行登录验证
-    # if not login():
-    #     exit()
+    if not login():
+        exit()
 
     # 可选：进行许可证检查
     if not check_license():

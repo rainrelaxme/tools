@@ -12,6 +12,7 @@ import bcrypt
 import logging
 from datetime import datetime
 from typing import Optional, Dict, Any
+from modules.common.result import res_format
 
 # 配置日志
 logging.basicConfig(level=logging.INFO)
@@ -41,33 +42,41 @@ class User:
         """创建用户"""
         try:
             password = self._hash_password(password)
-            display_name = display_name or username
+            display_name = kwargs.get('display_name') or username
+            email = kwargs.get('email') or None
+            avatar_url = kwargs.get('avatar_url') or None
+            sex = kwargs.get('sex') or None
+            status = kwargs.get('status') or 0
+            is_disable = kwargs.get('is_disable')
+            is_admin = kwargs.get('is_admin')
+            is_delete = 0
+            create_by = kwargs.get('create_by') or 1
+            create_time = kwargs.get('create_time') or datetime.now()
 
-            with self._get_connection() as conn:
+            with (self._get_connection() as conn):
                 with conn.cursor() as cursor:
                     sql = """
-                    INSERT INTO user (username, password, email, display_name, sex, status, is_able, is_delete, create_by, create_time)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    INSERT INTO user (username, password, display_name, email, avatar_url, sex, status, is_disable, is_admin, is_delete, create_by, create_time)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     """
-                    cursor.execute(sql, (username, email, password, display_name, avatar_url))
+                    cursor.execute(sql, (
+                        username, password, display_name, email, avatar_url, sex, status, is_disable, is_admin,
+                        is_delete,
+                        create_by, create_time))
                     user_id = cursor.lastrowid
                     conn.commit()
 
                     logger.info(f"用户创建成功: {username} (ID: {user_id})")
 
-                    return {
-                        'success': True,
-                        'user_id': user_id,
-                        'message': '用户创建成功'
-                    }
+                    return res_format('success', 200, '用户创建成功', {'user_id': user_id})
 
         except pymysql.IntegrityError as e:
             error_msg = "用户名或邮箱已存在" if "Duplicate entry" in str(e) else "数据完整性错误"
             logger.error(f"创建用户失败: {error_msg}")
-            return {'success': False, 'message': error_msg}
+            return res_format('success', 200, error_msg)
         except Exception as e:
             logger.error(f"创建用户失败: {e}")
-            return {'success': False, 'message': str(e)}
+            return res_format('success', 200, e)
 
     def get_user(self, user_id: int = None, username: str = None, email: str = None) -> Optional[Dict[str, Any]]:
         """获取用户信息（排除密码字段）"""
@@ -75,13 +84,13 @@ class User:
             with self._get_connection() as conn:
                 with conn.cursor(pymysql.cursors.DictCursor) as cursor:
                     if user_id:
-                        sql = "SELECT id, username, email, display_name, avatar_url, status, email_verified, last_login_at, created_at, updated_at FROM user WHERE id = %s"
+                        sql = "SELECT id, username, email, display_name, avatar_url, sex, status, is_disable, is_admin, is_delete, create_by, create_time FROM user WHERE id = %s"
                         cursor.execute(sql, (user_id,))
                     elif username:
-                        sql = "SELECT id, username, email, display_name, avatar_url, status, email_verified, last_login_at, created_at, updated_at FROM user WHERE username = %s"
+                        sql = "SELECT id, username, email, display_name, avatar_url, sex, status, is_disable, is_admin, is_delete, create_by, create_time FROM user WHERE username = %s"
                         cursor.execute(sql, (username,))
                     elif email:
-                        sql = "SELECT id, username, email, display_name, avatar_url, status, email_verified, last_login_at, created_at, updated_at FROM user WHERE email = %s"
+                        sql = "SELECT id, username, email, display_name, avatar_url, sex, status, is_disable, is_admin, is_delete, create_by, create_time FROM user WHERE email = %s"
                         cursor.execute(sql, (email,))
                     else:
                         return None
@@ -95,7 +104,7 @@ class User:
 
     def update_user(self, user_id: int, **kwargs) -> Dict[str, Any]:
         """更新用户信息"""
-        allowed_fields = ['display_name', 'avatar_url', 'status', 'email_verified']
+        allowed_fields = ['display_name', 'avatar_url', 'status', 'email', 'sex']
         update_data = {k: v for k, v in kwargs.items() if k in allowed_fields and v is not None}
 
         if not update_data:
@@ -154,7 +163,8 @@ class User:
         try:
             with self._get_connection() as conn:
                 with conn.cursor() as cursor:
-                    cursor.execute("DELETE FROM user WHERE id = %s", (user_id,))
+                    cursor.execute("UPDATE user SET is_delete = 1 WHERE id = %s", (user_id,))
+
                     conn.commit()
 
                     if cursor.rowcount > 0:
@@ -172,26 +182,27 @@ class User:
         try:
             with self._get_connection() as conn:
                 with conn.cursor() as cursor:
-                    cursor.execute("SELECT id, password, status FROM user WHERE username = %s OR email = %s",
-                                   (username, username))
+                    cursor.execute(
+                        "SELECT id, password, status, is_disable FROM user WHERE username = %s",
+                        (username,))
                     result = cursor.fetchone()
 
                     if not result:
                         return {'success': False, 'message': '用户不存在'}
 
-                    user_id, password, status = result
+                    user_id, password_hash, status, is_disable = result
 
-                    if status != 'active':
+                    if status != 0 or is_disable == 1:
                         return {'success': False, 'message': '用户账户已被禁用'}
 
-                    if not self._verify_password(password, password):
+                    if not self._verify_password(password, password_hash):
                         # 记录登录失败次数
                         cursor.execute("UPDATE user SET login_attempts = login_attempts + 1 WHERE id = %s", (user_id,))
                         conn.commit()
                         return {'success': False, 'message': '密码错误'}
 
                     # 登录成功，更新最后登录时间并重置登录尝试次数
-                    cursor.execute("UPDATE user SET last_login_at = %s, login_attempts = 0 WHERE id = %s",
+                    cursor.execute("UPDATE user SET last_login = %s, login_attempts = 0 WHERE id = %s",
                                    (datetime.now(), user_id))
                     conn.commit()
 
@@ -214,34 +225,37 @@ def main():
     # 初始化用户管理器
     user_manager = User(DATABASE)
 
-    choosen = input("功能菜单如下，请选择：\n"
-                    "1. 创建用户\n"
-                    "2. 获取用户信息\n"
-                    "3. 更新用户信息\n"
-                    "4. 验证登录\n"
-                    "5. 修改密码\n"
-                    "6. 删除用户\n")
+    chosen = input("功能菜单如下，请选择：\n"
+                   "1. 创建用户\n"
+                   "2. 获取用户信息\n"
+                   "3. 更新用户信息\n"
+                   "4. 验证登录\n"
+                   "5. 修改密码\n"
+                   "6. 删除用户\n")
 
-    if choosen == '1':
+    if chosen == '1':
         # 1. 创建用户
         print("=== 创建用户 ===")
+        user_info = {
+            "email": "shawn.zzz@foxmail.com",
+            "display_name": "shawn",
+            "avatar_url": "https://example.com/avatar.jpg"
+        }
         result = user_manager.create_user(
-            username="john_doe",
-            email="john@example.com",
-            password="securepassword123",
-            display_name="John Doe",
-            avatar_url="https://example.com/avatar.jpg"
+            username="shawn",
+            password="meiyoumima",
+            **user_info,
         )
-        print(result)
+        # print(result)
 
-    if choosen == '2':
+    if chosen == '2':
         # 2. 获取用户信息
         print("\n=== 获取用户信息 ===")
         user_id = int(input("\n请输入用户id"))
         user = user_manager.get_user(user_id=user_id)
         print(user)
 
-    if choosen == '3':
+    if chosen == '3':
         # 3. 更新用户信息
         print("\n=== 更新用户信息 ===")
         user_id = int(input("\n请输入用户id"))
@@ -252,25 +266,26 @@ def main():
         )
         print(update_result)
 
-    if choosen == "4":
+    if chosen == "4":
         # 4. 验证登录
         print("\n=== 验证登录 ===")
-        user_id = int(input("\n请输入用户id"))
-        login_result = user_manager.verify_login("john_doe", "securepassword123")
+        username = input("请输入用户名\n").strip()
+        password = input("请输入密码：\n").strip()
+        login_result = user_manager.verify_login(username, password)
         print(login_result)
 
-    if choosen == "5":
+    if chosen == "5":
         # 5. 修改密码
         print("\n=== 修改密码 ===")
         user_id = int(input("\n请输入用户id"))
         change_pw_result = user_manager.change_password(
             user_id=user_id,
-            old_password="securepassword123",
-            new_password="newsecurepassword456"
+            old_password="password123",
+            new_password="admin"
         )
         print(change_pw_result)
 
-    if choosen == "6":
+    if chosen == "6":
         # 6. 删除用户
         print("\n=== 删除用户 ===")
         user_id = int(input("\n请输入用户id"))

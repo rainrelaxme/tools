@@ -82,7 +82,7 @@ class Translator:
             text_lite = text.replace(" ", "").replace("　", "")
 
             if text_lite in dicts:
-                res = glossary[text_lite]
+                res = dicts[text_lite]
                 print(f"{text} --> {res}")
                 return res
 
