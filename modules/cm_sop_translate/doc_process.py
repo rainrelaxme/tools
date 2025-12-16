@@ -18,11 +18,11 @@ from docx.oxml.ns import qn
 from docx.oxml import CT_R
 from win32com import client as wc
 
-from modules.cm_sop_translate.conf.conf import LOG_PATH
+from modules.cm_sop_translate.config.config import config
 from modules.common.log import setup_logger
 from modules.cm_sop_translate.template import apply_preamble_format, apply_approveTable_format
 
-logger = setup_logger(log_dir=LOG_PATH, name='logs', level=logging.INFO)
+logger = setup_logger(log_dir=config.LOG_PATH, name='logs', level=logging.INFO)
 
 
 class DocumentContent:

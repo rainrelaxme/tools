@@ -11,19 +11,28 @@
 import copy
 import datetime
 import io
+import logging
 import os
+import shutil
 import time
 from pathlib import Path
 from typing import Dict, List, Optional
 
 import openpyxl
-from PIL import Image
+import pythoncom
+from PIL import Image, ImageGrab
 from openpyxl import load_workbook
 from openpyxl.cell.cell import Cell, MergedCell
 from openpyxl.drawing.image import Image as XLImage
 from openpyxl.styles import Font, PatternFill, Border, Side, Alignment, Protection
+from win32com import client as wc
 
+from modules.cm_sop_translate.config.config import config
 from modules.cm_sop_translate.translator import Translator
+from modules.common.log import setup_logger
+
+logger = setup_logger(log_dir=config.LOG_PATH, name='logs', level=logging.INFO)
+TEMP_PATH = config.TEMP_PATH
 
 
 def get_content(file_path: str) -> List[Dict[str, List[List[Optional[str]]]]]:
@@ -61,13 +70,15 @@ def get_content(file_path: str) -> List[Dict[str, List[List[Optional[str]]]]]:
             # sheet_matrix.append(row_values)
         # 合并单元格信息
         merge_info = get_merge_info(sheet)
+
         sheet_data = {
             "sheet": sheet.title,
             "sheet_color": sheet.sheet_properties.tabColor.rgb if sheet.sheet_properties.tabColor else None,
             # "rows": sheet_matrix,
             # "cells": cells_matrix,
             "cells": update_merge_info(cells_matrix, merge_info),
-            "merge_info": merge_info
+            "merge_info": merge_info,
+            "shape_info": extract_shape_from_excel(file_path, sheet.title, TEMP_PATH)
         }
         data.append(sheet_data)
 
@@ -322,13 +333,179 @@ def extract_images_from_excel(file_path, output_dir='extracted_images'):
     return image_data
 
 
+def extract_shape_from_excel(excel_path, sheet_name, output_folder):
+    """
+    将Excel工作表中重叠的图片和形状组合并导出为图像
+
+    参数:
+    excel_path: Excel文件路径
+    sheet_name: 工作表名称
+    output_image_path: 输出图像文件路径
+    overlap_threshold: 重叠阈值(0-1)，默认30%重叠视为需要组合
+    """
+    excelApp = None
+    workbook_win32 = None
+    shapes_info = []
+    # 确保输出文件夹存在
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+    try:
+        # 初始化COM (单线程公寓模式)
+        # pythoncom.CoInitialize()
+
+        # 启动Excel应用程序
+        excelApp = wc.Dispatch("Excel.Application")
+        excelApp.Visible = False  # 不可见模式运行
+        excelApp.DisplayAlerts = False  # 不显示警告
+        excelApp.ScreenUpdating = False  # 禁用屏幕更新以提高性能
+
+        logger.info(f"正在打开Excel文件: {excel_path}, 或缺{sheet_name}的内容。")
+
+        # 打开工作簿
+        workbook_win32 = excelApp.Workbooks.Open(os.path.abspath(excel_path))
+        worksheet = workbook_win32.Worksheets(sheet_name)
+
+        # 激活工作表
+        worksheet.Activate()
+
+        # 获取所有形状
+        shapes = worksheet.Shapes
+
+        # 如果没有形状，直接返回
+        if shapes.Count == 0:
+            logger.warning("工作表中没有找到形状或图片")
+            return
+
+        logger.info(f"找到 {shapes.Count} 个形状/图片")
+
+        # 收集所有形状的信息
+        for i in range(1, shapes.Count + 1):
+            try:
+                shape = shapes.Item(i)
+                text = ''
+                try:
+                    # if hasattr(shape, 'TextEffect'):
+                    if shape.Type == 17:
+                        text = shape.TextEffect.Text
+                except Exception as e:
+                    logger.error(str(e))
+
+                shape_info = {
+                    'id': shape.ID,
+                    'name': shape.Name,
+                    'type_id': shape.Type,
+                    "type": get_shape_type(shape),
+                    'left': shape.Left,
+                    'top': shape.Top,
+                    'width': shape.Width,
+                    'height': shape.Height,
+                    # 'shape': shape,
+                    'text': text
+                }
+
+                # # 复制形状
+                # shape.Copy()
+                # # 等待剪贴板数据到来
+                # time.sleep(0.5)
+                # # 从剪贴板获取图像
+                # image = ImageGrab.grabclipboard()
+                #
+                # if image is not None:
+                #     # CT = datetime.datetime.now().strftime('%y%m%d%H%M%S')
+                #     output_pic = os.path.join(output_folder, f"{sheet_name}_{shape.Name}.png")
+                #     image.save(output_pic, 'PNG')
+                #     shape_info["path"] = output_pic
+                #     print(f"图片保存成功{output_pic}")
+                # else:
+                #     print("未能从剪贴板获取图像")
+
+                shapes_info.append(shape_info)
+            except Exception as e:
+                logger.warning(f"无法获取形状 {i} 的信息: {e}")
+                continue
+
+        logger.info(f"shape_info: {shapes_info}")
+
+    except Exception as e:
+        logger.error(f"处理过程中发生错误: {e}")
+        # 获取更详细的错误信息
+        try:
+            import win32api
+            win32api.FormatMessage(e.excepinfo[5])
+        except:
+            pass
+        raise e
+
+    finally:
+        # 确保清理资源
+        try:
+            if workbook_win32:
+                workbook_win32.Close(SaveChanges=False)
+                logger.info("工作簿已关闭")
+        except Exception as e:
+            logger.error(f"关闭工作簿时出错: {e}")
+
+        try:
+            if excelApp:
+                excelApp.Quit()
+                logger.info("Excel应用程序已退出")
+        except Exception as e:
+            logger.error(f"退出Excel时出错: {e}")
+
+        # 释放COM资源
+        # pythoncom.CoUninitialize()
+
+        return shapes_info
+
+
+def get_shape_type(shape):
+    """
+    判断形状类型
+    """
+    shape_type = shape.Type
+    if shape.Type == 1 and shape.Name.startswith("Rectangle"):
+        shape_type = "Rectangle"
+    if shape.Type == 13 and shape.Name.startswith("Picture"):
+        shape_type = "Picture"
+    # Group需要组合
+    if shape.Type == 6 and shape.Name.startswith("Group"):
+        shape_type = "Group"
+    # TextBox需要翻译
+    if shape.Type == 17 and shape.Name.startswith("TextBox"):
+        shape_type = "TextBox"
+    return shape_type
+
+
+def paste_shape_to_excel(input_file, output_file, sheet_name):
+    """
+    绘制形状：textbox
+    采用copy的方法
+    """
+    excelApp = wc.Dispatch("Excel.Application")
+    excelApp.Visible = False
+
+    workbook = excelApp.Workbooks.Open(input_file)
+    sheet = workbook.Worksheets("Sheet1")
+
+    new_workbook = excelApp.Workbooks.Open(output_file)
+    new_sheet = new_workbook.Worksheets(sheet_name)
+
+    for shape in sheet.Shapes:
+        shape.Copy()
+        new_sheet.Paste()
+
+    new_workbook.SaveAs(output_file)
+    print(f"{output_file}已保存成功！")
+    excelApp.Quit()
+
+
 def add_translation(data, translator, langs: list, method: str):
     """
     添加翻译段落
     method-replace: 替换原文字，只保留1种语言
     method-add: 增加新的内容，保留3种语言
     """
-    new_data = []
+    tran_data = []
     if method == 'replace':  # 替换成一种语言
         for lang in langs:
             lang_data = copy.deepcopy(data)  # 使用copy()会影响原始数据，deepcopy不会影响
@@ -338,14 +515,15 @@ def add_translation(data, translator, langs: list, method: str):
                     if original_text.strip():
                         translated_text = translator.translate(original_text, lang, display=True)
                         cell_data['value'] = translated_text
-            new_data.append({
+            tran_data.append({
                 "language": lang,
                 "data": lang_data
             })
 
     elif method == 'replace_multi':  # 替换成多种语言
-        lang_data = copy.deepcopy(data)
-        for sheet_data in lang_data:
+        # lang_data = copy.deepcopy(data)
+        for sheet_data in data:
+            # 翻译单元格文字
             for cell_data in sheet_data['cells']:
                 original_text = str(cell_data['value'])
                 if original_text.strip():
@@ -354,15 +532,25 @@ def add_translation(data, translator, langs: list, method: str):
                         translated_text = translator.translate(original_text, lang, display=True)
                         all_translated_text = all_translated_text + '\n' + translated_text
                     cell_data['value'] = all_translated_text
-        new_data.append({
-            "language": langs,
-            "data": lang_data
+            # 翻译shape文本框文字
+            for shape_data in sheet_data['shape_info']:
+                original_text = str(shape_data['text'])
+                if original_text.strip():
+                    all_translated_text = original_text
+                    for lang in langs:
+                        translated_text = translator.translate(original_text, lang, display=True)
+                        all_translated_text = all_translated_text + '\n' + translated_text
+                    shape_data['text'] = all_translated_text
+
+        tran_data.append({
+            "language": '&'.join(langs),
+            "data": data
         })
 
     elif method == 'add':
         pass
 
-    return new_data
+    return tran_data
 
 
 def apply_cell_format(cell, data):
@@ -421,92 +609,114 @@ def apply_cell_format(cell, data):
     cell.number_format = data['format']['number_format']
 
 
-def insert_images_to_excel(workbook, image_data):
-    """
-    将图片插入到Excel工作簿中
-    """
-    for sheet_name, images in image_data.items():
-        if sheet_name in workbook.sheetnames:
-            sheet = workbook[sheet_name]
+# def remove_shape_from_excel(input_file, *shape, sheet_name: List = None, app=None):
+#     """
+#     去除excel中指定的shape类型
+#     """
+#     # 打开excel
+#     # excelApp = wc.Dispatch("Excel.Application")
+#     # excelApp.Visible = False  # 不可见模式运行
+#     # excelApp.DisplayAlerts = False  # 不显示警告
+#     # excelApp.ScreenUpdating = False  # 禁用屏幕更新以提高性能
+#     excelApp = app
+#     workbook = excelApp.Workbooks.Open(input_file)
+#
+#     # 获取所有待处理的sheet
+#     if sheet_name:
+#         all_sheets = sheet_name
+#     else:
+#         all_sheets = [sheet.Name for sheet in workbook.Sheets]
+#
+#     for sht_name in all_sheets:
+#         sheet = workbook.Worksheets(sht_name)
+#         if shape:
+#             # 移除指定的形状
+#             for shape_type in shape:
+#                 for shp in sheet.Shapes:
+#                     if shp.Type == int(shape_type):
+#                         shp.Delete()
+#         else:
+#             # 移除所有形状
+#             for shp in sheet.Shapes:
+#                 shp.Delete()
+#
+#     # 存储文件
+#     output_file = input_file.replace('.xlsx', '_remove_shape.xlsx')
+#     workbook.SaveAs(output_file)
+#     print(f"{output_file}已保存成功！")
+#     # excelApp.Quit()
+#
+#     return output_file
 
-            for img_info in images:
-                try:
-                    img = XLImage(img_info['path'])
-                    # 设置图片位置（简化处理，实际可能需要更精确的位置计算）
-                    sheet.add_image(img, img_info['anchor']._from._col)
-                except Exception as e:
-                    print(f"插入图片失败: {e}")
+
+# def insert_shape_to_excel(input_file, output_file, data, method='draw', app=None):
+#     """
+#     将shape插入到excel中
+#     """
+#     # 打开excel
+#     # excelApp = wc.Dispatch("Excel.Application")
+#     # excelApp.Visible = False  # 不可见模式运行
+#     # excelApp.DisplayAlerts = False  # 不显示警告
+#     # excelApp.ScreenUpdating = False  # 禁用屏幕更新以提高性能
+#     excelApp = app
+#     workbook = excelApp.Workbooks.Open(input_file)
+#     target_workbook = excelApp.Workbooks.Open(output_file)
+#
+#     # 从已经保存png文件添加到excel中
+#     if method == 'draw':
+#         for sheet_data in data:
+#             sheet = workbook.Worksheets(sheet_data['sheet'])
+#             for shape_data in sheet_data['shape_info']['shape']:
+#                 img_path = f"{sheet_data['shape_info']['shape_path']}/{sheet_data['sheet']}_{shape_data['name']}.png"
+#                 img = sheet.Pictures().Insert(img_path)
+#                 img.Left = shape_data['left']
+#                 img.Top = shape_data['top']
+#                 img.Width = shape_data['width']
+#                 img.Height = shape_data['height']
+#
+#     # 从原excel中复制shape到新文件中
+#     elif method == 'paste':
+#         for sheet_data in data:
+#             sheet = workbook.Worksheets(sheet_data['sheet'])
+#             target_sheet = target_workbook.Worksheets(sheet_data['sheet'])
+#             for shape_data in sheet_data['shape_info']:
+#                 shape = sheet.Shapes(shape_data['name'])
+#                 # 替换TextBox文本内容
+#                 if shape.Type == 17:
+#                     shape.TextEffect.Text = shape_data['text']
+#                 shape.Copy()
+#                 target_sheet.Paste()
+#
+#     # 存储文件
+#     # new_output = output_file.replace('.xlsx', '_2.xlsx')
+#     # target_workbook.SaveAs(new_output)
+#     # print(f"{new_output}已保存成功！")
+#     # excelApp.Quit()
+#
+#     return target_workbook
 
 
-def create_new_excel(output_file: str, data, method, input_file=None):
+def create_new_excel(output_path: str, data, method, input_file=None):
     """
     根据内容创建新的excel文件
     方法-simple：直接替换value
     方法-complex：获取数据+格式等，再生成新的文件
     """
+    # 建立win32应用
+    excelApp = wc.Dispatch("Excel.Application")
+    excelApp.Visible = False  # 不可见模式运行
+    excelApp.DisplayAlerts = False  # 不显示警告
+    excelApp.ScreenUpdating = False  # 禁用屏幕更新以提高性能
+
+    # 方法2： 找到合并单元格的位置信息，只更新允许写入的内容
     if method == 'simple':
-        """
-        if len(data) > 1:
-            for lang_data in data:
-                lang = lang_data['language']
-
-                # 读取原文件
-                excel = openpyxl.load_workbook(input_file)
-
-                # 方法1：合并单元格，先取消再合并，以便写入内容 - 会丢失合并单元格中的图片信息，主要是形状信息
-                for sheet_data in lang_data['data']:
-                    sheet = excel[sheet_data['sheet']]
-                    # 获取合并单元格信息
-                    merged_ranges = list(sheet.merged_cells.ranges)
-                    # 取消合并
-                    for merged_range in merged_ranges:
-                        sheet.unmerge_cells(str(merged_range))
-                    # 更换单元格内容
-                    for cell in sheet_data['cells']:
-                        sheet[cell['coordinate']] = cell['value']
-                    # 合并单元格
-                    for merged_range in merged_ranges:
-                        sheet.merge_cells(str(merged_range))
-
-                # 存储文件
-                new_output_file = output_file.replace(".xlsx", f"_{lang}.xlsx")
-                time.sleep(1)
-                excel.save(new_output_file)
-                print(f"输出文件：{new_output_file}")
-
-        elif len(data) == 1:
-            # 方法2： 找到合并单元格的位置信息，只更新允许写入的内容
-            for lang_data in data:
-                lang = lang_data['language']
-                # 读取原文件
-                excel = openpyxl.load_workbook(input_file)
-
-                for sheet_data in lang_data['data']:
-                    sheet = excel[sheet_data['sheet']]
-                    # images = sheet._images
-                    # 更换单元格内容
-                    for cell in sheet_data['cells']:
-                        if cell['is_merged'] and not cell['is_merge_start']:
-                            continue
-                        elif cell['value'] == '':
-                            continue
-                        else:
-                            sheet[cell['coordinate']] = cell['value']
-                # 存储文件
-                new_output_file = output_file.replace(".xlsx", f"_{lang}.xlsx")
-                time.sleep(1)
-                excel.save(new_output_file)
-                print(f"输出文件：{new_output_file}")
-        """
-        # 方法2： 找到合并单元格的位置信息，只更新允许写入的内容
         for lang_data in data:
             lang = lang_data['language']
-            # 读取原文件
-            excel = openpyxl.load_workbook(input_file)
 
+            # 替换单元格内容并保存新文件
+            excel = openpyxl.load_workbook(input_file)
             for sheet_data in lang_data['data']:
                 sheet = excel[sheet_data['sheet']]
-                # images = sheet._images
                 # 更换单元格内容
                 for cell in sheet_data['cells']:
                     if cell['is_merged'] and not cell['is_merge_start']:
@@ -515,11 +725,51 @@ def create_new_excel(output_file: str, data, method, input_file=None):
                         continue
                     else:
                         sheet[cell['coordinate']] = cell['value']
+
+            # 输出文件
+            CT = datetime.datetime.now().strftime('%y%m%d%H%M%S')
+            file_base_name = os.path.basename(input_file)
+            output_file = f"{output_path}/{file_base_name.replace(".xlsx", f"_tran_{lang}_{CT}.xlsx")}"
+            excel.save(output_file)
+
+            # 替换形状
+            replace_shape_on_excel(output_file, input_file, lang_data['data'], method='paste', app=excelApp)
+            # 再次退出excel
+            excelApp.Quit()
+
+            return output_file
+
+    elif method == 'copy':
+        # 方法3： 整个sheet复制？不如直接复制整个excel
+        # 有问题，替换单元格内容是用的openpyxl，一旦用她load_workbook，还是会丢失形状。不过理论上win32也可以替换单元格内容。。。
+        pass
+
+    elif method == 'simple2':  # 未使用此方法
+        for lang_data in data:
+            lang = lang_data['language']
+            # 读取原文件
+            excel = openpyxl.load_workbook(input_file)
+
+            # 方法1：合并单元格，先取消再合并，以便写入内容 - 会丢失合并单元格中的图片信息，主要是形状信息
+            for sheet_data in lang_data['data']:
+                sheet = excel[sheet_data['sheet']]
+                # 获取合并单元格信息
+                merged_ranges = list(sheet.merged_cells.ranges)
+                # 取消合并
+                for merged_range in merged_ranges:
+                    sheet.unmerge_cells(str(merged_range))
+                # 更换单元格内容
+                for cell in sheet_data['cells']:
+                    sheet[cell['coordinate']] = cell['value']
+                # 合并单元格
+                for merged_range in merged_ranges:
+                    sheet.merge_cells(str(merged_range))
+
             # 存储文件
-            new_output_file = output_file.replace(".xlsx", f"_{lang}.xlsx")
-            time.sleep(1)
-            excel.save(new_output_file)
-            print(f"输出文件：{new_output_file}")
+            # new_output_file = output_file.replace(".xlsx", f"_{lang}.xlsx")
+            # time.sleep(1)
+            # excel.save(new_output_file)
+            # print(f"输出文件：{new_output_file}")
 
     elif method == 'complex':
         excel = openpyxl.Workbook()
@@ -541,8 +791,140 @@ def create_new_excel(output_file: str, data, method, input_file=None):
                 sheet.merge_cells(str(merge_info))
 
         # 存储文件
-        excel.save(output_file)
-        print(f"输出文件：{output_file}")
+        # excel.save(output_file)
+        # print(f"输出文件：{output_file}")
+
+
+def replace_shape_on_excel(output_file, src_file, data, method='paste', *shape, sheets: List = None, app=None):
+    """处理形状图片"""
+    excelApp = app
+    output_workbook = excelApp.Workbooks.Open(output_file)
+    src_workbook = excelApp.Workbooks.Open(src_file)
+    try:
+        # 步骤1. 去除excel中的shape
+        # 获取所有待处理的sheet
+        if sheets:
+            sheets = sheets
+        else:
+            sheets = [sheet.Name for sheet in output_workbook.Sheets]
+
+        for sht_name in sheets:
+            sheet = output_workbook.Worksheets(sht_name)
+            if shape:
+                # 移除指定的形状
+                for shape_type in shape:
+                    for shp in sheet.Shapes:
+                        if shp.Type == int(shape_type):
+                            shp.Delete()
+            else:
+                # 移除所有形状
+                for shp in sheet.Shapes:
+                    shp.Delete()
+
+        # 步骤2. 添加形状到excel中
+        # 方法1：从原excel中复制shape到新文件中
+        if method == 'paste':
+            for sheet_data in data:
+                sheet = src_workbook.Worksheets(sheet_data['sheet'])
+                target_sheet = output_workbook.Worksheets(sheet_data['sheet'])
+                for shape_data in sheet_data['shape_info']:
+                    shape = sheet.Shapes(shape_data['name'])
+                    # 替换TextBox文本内容
+                    if shape.Type == 17:
+                        shape.TextEffect.Text = shape_data['text']
+                    shape.Copy()
+                    print("\nori.name:", shape.Name)
+                    # 等待剪贴板数据到来
+                    time.sleep(0.5)
+                    target_sheet.Paste()
+
+                # 将形状摆到正确的位置
+                for idx, (ori, new) in enumerate(zip(sheet_data['shape_info'], target_sheet.Shapes)):
+                    new.Left = ori['left']
+                    new.Top = ori['top']
+                    new.Width = ori['width']
+                    new.Height = ori['height']
+                    print("\nnew.name:", new.Name)
+                    # for shape in target_sheet.Shapes:
+                    #     print(f"ID:{shape.ID}, name:{shape.Name}, type:{shape.Type}")
+
+        # 方法2：从已经保存png文件添加到excel中
+        elif method == 'draw':
+            for sheet_data in data:
+                sheet = output_workbook.Worksheets(sheet_data['sheet'])
+                for shape_data in sheet_data['shape_info']['shape']:
+                    img_path = f"{sheet_data['shape_info']['shape_path']}/{sheet_data['sheet']}_{shape_data['name']}.png"
+                    img = sheet.Pictures().Insert(img_path)
+                    img.Left = shape_data['left']
+                    img.Top = shape_data['top']
+                    img.Width = shape_data['width']
+                    img.Height = shape_data['height']
+
+        # 存储文件
+        output_workbook.SaveAs(output_file)
+        print(f"{output_file}已保存成功！")
+        return output_file
+    except Exception as e:
+        print(f"处理形状发生错误：{e}")
+    finally:
+        excelApp.Quit()
+        # 清除缓存图片
+        shutil.rmtree(TEMP_PATH)
+
+
+def apply_excel_template(data, template=None):
+    """根据模板更新内容"""
+    if template is None:
+        return data
+
+
+def xls_to_xlsx(input_file, output_file=None):
+    """
+    将xls文件转换为xlsx格式
+    """
+    # 如果未指定输出路径，自动生成
+    if output_file is None:
+        output_file = input_file.replace('.xls', '.xlsx')
+
+    # 启动Word应用程序
+    excel = wc.Dispatch('Excel.Application')
+    excel.Visible = False  # 不显示Excel界面
+
+    try:
+        # 打开xls文档
+        workbook = excel.Workbooks.Open(input_file)
+        # 另存为xlsx格式
+        workbook.SaveAs(output_file, FileFormat=16)  # 16表示xlsx格式
+        workbook.Close()
+        logger.info(f"转换成功: {input_file} -> {output_file}")
+        return output_file
+    except Exception as e:
+        logger.error(f"转换失败: {e}")
+        return False
+    finally:
+        excel.Quit()
+
+
+def ensure_excel_closed():
+    """
+    确保所有Excel实例都已关闭
+    """
+    try:
+        # 尝试通过COM获取Excel应用程序
+        excel = wc.Dispatch("Excel.Application")
+        # 关闭所有工作簿
+        for workbook in excel.Workbooks:
+            workbook.Close(SaveChanges=False)
+        # 退出Excel
+        excel.Quit()
+        logger.info("已强制关闭所有Excel实例")
+    except:
+        # 如果无法通过COM关闭，尝试通过任务管理器关闭
+        try:
+            os.system('taskkill /f /im excel.exe')
+            logger.warning("已通过强制方式关闭Excel进程")
+        except:
+            logger.error("无法关闭Excel进程")
 
 
 if __name__ == "__main__":
@@ -551,28 +933,25 @@ if __name__ == "__main__":
     language = ['英语', '越南语']
     # language = ['英语']
 
-    input_file = r"D:\Code\Project\tools\data\test\1.xlsx"
-
+    input_file = r"D:\Code\Project\tools\data\test\5.xlsx"
     output_folder = r"D:\Code\Project\tools\data\temp"
-    file_base_name = os.path.basename(input_file)
-    output_file = output_folder + "/" + file_base_name.replace(".xlsx", f"_translate_{current_time}.xlsx")
 
     translator = Translator()
     print(f"********************start at {current_time}********************")
 
+    # 确保没有残留的Excel进程
+    ensure_excel_closed()
+    # 等待一段时间确保Excel完全关闭
+    time.sleep(2)
+
     # 1. 读取原始内容
-    # 文字
     content_data = get_content(input_file)
-    # 图片
-    # image_data = extract_images_from_excel(input_file, output_folder)
 
     # 2. 翻译
-    # translated_data = add_translation(content_data, translator, language, 'replace')
     translated_data = add_translation(content_data, translator, language, 'replace_multi')
 
     # 3. 处理数据内容，使其符合创建新文档格式
-    # formatted_data = apply_template(origin_data, template)
-    formatted_data = translated_data
+    formatted_data = apply_excel_template(translated_data)
 
-    # 4. 创建新文档
-    create_new_excel(output_file, formatted_data, 'simple', input_file)
+    # 4. 创建新文档，替换单元格内容
+    create_new_excel(output_folder, formatted_data, 'simple', input_file)

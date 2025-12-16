@@ -218,10 +218,8 @@ class User:
             return {'success': False, 'message': str(e)}
 
 
-from config.kawang import DATABASE
-
-
 def main():
+    from shawn.kawang import DATABASE
     # 初始化用户管理器
     user_manager = User(DATABASE)
 
@@ -293,5 +291,5 @@ def main():
         print(delete_result)
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()

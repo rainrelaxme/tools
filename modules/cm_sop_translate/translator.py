@@ -16,17 +16,16 @@ import os
 from openai import OpenAI
 
 from modules.common.log import setup_logger
-from modules.cm_sop_translate.conf.conf import LOG_PATH
-from modules.cm_sop_translate.conf.conf import DS_KEY, GLOSSARY
+from modules.cm_sop_translate.config.config import config
 
-logger = setup_logger(log_dir=LOG_PATH, name='logs', level=logging.INFO)
+logger = setup_logger(log_dir=config.LOG_PATH, name='logs', level=logging.INFO)
 
 
 class Translator:
     def __init__(self):
-        self.api_key = DS_KEY
+        self.api_key = config.DS_KEY
         self.base_url = "https://api.deepseek.com"
-        self.glossary_folder = GLOSSARY['dir']
+        self.glossary_folder = config.GLOSSARY['dir']
 
     def translate(self, text: str, language, display=False):
         # 先过滤是否在词库中
@@ -70,7 +69,7 @@ class Translator:
             #     print(f"{language}该语言词库未配置，采用AI翻译。")
             #     return False
 
-            glossary = os.path.join(glossary_folder, GLOSSARY['languages'][language])
+            glossary = os.path.join(glossary_folder, config.GLOSSARY['languages'][language])
 
             # if not os.path.isfile(glossary):
             #     print(f"词库文件不存在，请检查{glossary}，采用AI翻译。")
@@ -79,10 +78,11 @@ class Translator:
             with open(glossary, "r", encoding="utf-8") as f:
                 dicts = json.load(f)
 
-            text_lite = text.replace(" ", "").replace("　", "")
+            if text not in dicts:
+                text = text.replace(" ", "").replace("　", "")
 
-            if text_lite in dicts:
-                res = dicts[text_lite]
+            if text in dicts:
+                res = dicts[text]
                 print(f"{text} --> {res}")
                 return res
 

@@ -11,7 +11,9 @@
 import getpass
 
 from modules.user.user import User
-from config.kawang import DATABASE
+from modules.cm_sop_translate.config.config import config
+
+DATABASE = config.DATABASE
 
 
 def login():
@@ -32,7 +34,7 @@ def login():
 def check_license():
     """简单的许可证检查（可选功能）"""
     import datetime as dt
-    expiry_date = dt.datetime(2025, 12, 31)  # 设置过期时间
+    expiry_date = dt.datetime(2026, 2, 10)  # 设置过期时间
 
     if dt.datetime.now() > expiry_date:
         print("🚫 软件许可证已过期，请联系管理员！")

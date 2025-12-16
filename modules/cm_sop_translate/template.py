@@ -16,9 +16,9 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, Cm, RGBColor
 
-from modules.cm_sop_translate.conf.conf import TEMPLATE
+from modules.cm_sop_translate.config.config import config
 
-with open(TEMPLATE, 'r', encoding='utf-8') as f:
+with open(config.TEMPLATE, 'r', encoding='utf-8') as f:
     template = json.load(f)
 HEADER_FORMAT = template['header']['format']
 FOOTER_FORMAT = template['footer']['format']

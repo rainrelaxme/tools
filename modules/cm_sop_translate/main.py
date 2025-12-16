@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*- 
 """
 @Project : tools
-@File    : main.py
+@File    : run.py
 @Author  : Shawn
 @Date    : 2025/9/25 11:13 
 @Info    : Description of this file
@@ -12,11 +12,14 @@ import datetime
 import os
 import sys
 import logging
+import time
 
 from docx import Document
 
+from modules.cm_sop_translate.excel_process import xls_to_xlsx, get_content, add_translation, create_new_excel, \
+    ensure_excel_closed, apply_excel_template
 from modules.common.log import setup_logger
-from modules.cm_sop_translate.conf.conf import LOG_PATH
+from modules.cm_sop_translate.config.config import config
 from modules.cm_sop_translate.auth import check_license, login
 from modules.cm_sop_translate.doc_process import doc_to_docx, DocumentContent, set_paper_size_format, \
     add_content, add_cover_translation, add_paragraph_translation, add_cover, add_table_translation, \
@@ -24,7 +27,7 @@ from modules.cm_sop_translate.doc_process import doc_to_docx, DocumentContent, s
 from modules.cm_sop_translate.template import apply_header_format, apply_footer_format, apply_template
 from modules.cm_sop_translate.translator import Translator
 
-logger = setup_logger(log_dir=LOG_PATH, name='logs', level=logging.INFO)
+logger = setup_logger(log_dir=config.LOG_PATH, name='logs', level=logging.INFO)
 
 
 def text_translate(language):
@@ -126,6 +129,65 @@ def docx_translate(language):
     logger.info(f"所有文件处理完成！输出目录: {output_folder}")
 
 
+def excel_translate(language):
+    # 设置输入文件夹路径
+    input_folder = ""
+    while input_folder.strip() == "":
+        input_folder = input("请输入待翻译的文件目录：\n")
+
+    # 设置输出文件夹路径（二级文件夹）
+    output_folder = os.path.join(input_folder, "translate_output")
+    os.makedirs(output_folder, exist_ok=True)
+
+    # 初始化翻译器
+    translator = Translator()
+
+    # 遍历文件夹中的所有文件
+    for filename in os.listdir(input_folder):
+        logger.info(f"正在处理文件: {filename}")
+
+        # 跳过输出文件夹translate_output
+        if filename == "translate_output":
+            logger.info("这是输出文件夹")
+            continue
+        # 检查文件是否为Excel文档（.xlsx格式）,若是.doc文件则转为.xlsx
+        if filename.endswith('.xls') and not filename.startswith('~$'):  # 忽略临时文件
+            doc_path = os.path.join(input_folder, filename)
+            filename = os.path.basename(xls_to_xlsx(doc_path))
+
+        if filename.endswith('.xlsx') and not filename.startswith('~$'):
+            input_file = os.path.join(input_folder, filename)
+
+            # 生成输出文件名（原文件名+时间）
+            current_time = datetime.datetime.now().strftime('%y%m%d%H%M%S')
+            # file_base_name = os.path.splitext(filename)[0]  # 去掉扩展名
+            # output_filename = f"{file_base_name}_translate_{current_time}.xlsx"
+            # output_file = os.path.join(output_folder, output_filename)
+
+            print(f"********************start at {current_time}********************")
+
+            # 确保没有残留的Excel进程
+            ensure_excel_closed()
+            # 等待一段时间确保Excel完全关闭
+            time.sleep(2)
+
+            # 1. 读取原始内容
+            content_data = get_content(input_file)
+
+            # 2. 翻译
+            translated_data = add_translation(content_data, translator, language, 'replace_multi')
+
+            # 3. 处理数据内容，使其符合创建新文档格式
+            formatted_data = apply_excel_template(translated_data)
+
+            # 4. 创建新文档，替换单元格内容
+            output_filename = create_new_excel(output_folder, formatted_data, 'simple', input_file)
+
+            logger.info(f"已完成翻译: {output_filename}")
+
+        logger.info(f"所有文件处理完成！输出目录: {output_folder}")
+
+
 def create_new_document(data, output_path, type):
     """
     根据记录的内容和格式生成新的Word文档
@@ -173,7 +235,8 @@ if __name__ == '__main__':
         print("请选择使用方式(请输入序号)：\n"
               "1. 文本翻译\n"
               "2. 文档翻译\n"
-              "3. 退出")
+              "3. excel翻译\n"
+              "4. 退出")
         option = input().strip()
         language = ['英语', '越南语']
         if option == '1':
@@ -183,6 +246,9 @@ if __name__ == '__main__':
             print(f"当前目标语言为{language}")
             docx_translate(language)
         elif option == '3':
+            print(f"当前目标语言为{language}")
+            excel_translate(language)
+        elif option == '4':
             print("\n感谢使用！程序即将退出...")
             input("按回车键关闭窗口...")
             sys.exit(0)
@@ -190,7 +256,7 @@ if __name__ == '__main__':
             print("输入错误，请重新输入")
 
         current_time = datetime.datetime.now().strftime('%y%m%d%H%M%S')
-        print(f"\n********************{current_time} end**********************")
+        print(f"\n********************end at {current_time}**********************")
 
 
 
