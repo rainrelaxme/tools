@@ -163,7 +163,7 @@ cython_debug/
 .idea/
 
 #  私人配置文件
-.config/private.py
+.shawn/
 
 #  data
 /data/

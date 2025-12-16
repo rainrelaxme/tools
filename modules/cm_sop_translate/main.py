@@ -218,7 +218,7 @@ def create_new_document(data, output_path, type):
             logger.info(f"新文档已保存到: {output_path}")
 
 
-if __name__ == '__main__':
+def main():
     print("\n" + "=" * 100)
     print("\x20" * 45 + f"文档翻译系统")
     print("=" * 100)
@@ -259,4 +259,5 @@ if __name__ == '__main__':
         print(f"\n********************end at {current_time}**********************")
 
 
-
+if __name__ == '__main__':
+    main()
