@@ -8,7 +8,7 @@
 @Info    : 单元测试等测试用例，pytest 或 unittest
 """
 
-from src.test.test import get_footer_content
+from modules.test.test import get_footer_content
 
 
 def test_add():
