@@ -37,14 +37,14 @@ class DevConfig(Config):  # 开发环境
     GLOSSARY = {
         'dir': os.path.join(ROOT_PATH, 'config'),
         'languages': {
-            '英语': 'glossary_en_dev.json',
-            '越南语': 'glossary_vi_dev.json',
+            '英语': 'dev_glossary_en.json',
+            '越南语': 'dev_glossary_vi.json',
         }
     }
     # 日志位置
     LOG_PATH = os.path.join(ROOT_PATH, "logs")
     # 模板内容
-    TEMPLATE = os.path.join(ROOT_PATH, 'config/template_dev.json')
+    TEMPLATE = os.path.join(ROOT_PATH, 'config/dev_template.json')
     # 缓存文件
     TEMP_PATH = os.path.join(ROOT_PATH, 'temp')
     # database
