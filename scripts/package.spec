@@ -8,12 +8,12 @@ py_files = [
 ]
 
 add_files = [
-    ('D:\\Code\\Project\\tools\\modules\\cm_sop_translate\\conf\\json', 'config'),
+    ('D:\\Code\\Project\\tools\\modules\\cm_sop_translate\\config', 'config'),
 ]
 
 a = Analysis(
     py_files,
-    pathex=["D:/Code/Config/Private"],
+    pathex=["D:\\Code\\Project\\tools\\shawn"],
     binaries=[],
     datas=add_files,
     hiddenimports=[],
