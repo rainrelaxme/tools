@@ -21,7 +21,7 @@ from modules.cm_sop_translate.excel_process import xls_to_xlsx, get_content, add
 from modules.common.log import setup_logger
 from modules.cm_sop_translate.config.config import config
 from modules.cm_sop_translate.auth import check_license, login
-from modules.cm_sop_translate.doc_process import doc_to_docx, DocumentContent, set_paper_size_format, \
+from modules.cm_sop_translate.word_process import doc_to_docx, DocumentContent, set_paper_size_format, \
     add_content, add_cover_translation, add_paragraph_translation, add_cover, add_table_translation, \
     add_header_translation, add_footer_translation
 from modules.cm_sop_translate.template import apply_header_format, apply_footer_format, apply_template

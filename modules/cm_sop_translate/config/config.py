@@ -95,7 +95,7 @@ mapping = {
 }
 
 # 一键切换环境
-# APP_ENV = os.environ.get('APP_ENV', 'dev').lower()  # 设置环境变量
-APP_ENV = os.environ.get('APP_ENV', 'prod').lower()  # 设置环境变量
+APP_ENV = os.environ.get('APP_ENV', 'dev').lower()  # 设置环境变量
+# APP_ENV = os.environ.get('APP_ENV', 'prod').lower()  # 设置环境变量
 
 config = mapping[APP_ENV]()

@@ -8,8 +8,11 @@
 @Date   : 2025/9/24 02:00
 @Info   : 实现word文档的翻译，包括段落、表格，并将翻译后的文本置于原文本后，且保持原文档格式。其中doc转换为doc利用了win32包，仅支持在windows系统。
 """
+import datetime
 import logging
+import os
 
+from docx import Document
 from docx.enum.section import WD_ORIENTATION
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.shared import RGBColor, Pt, Inches, Cm
@@ -19,8 +22,10 @@ from docx.oxml import CT_R
 from win32com import client as wc
 
 from modules.cm_sop_translate.config.config import config
+from modules.cm_sop_translate.main import create_new_document
+from modules.cm_sop_translate.translator import Translator
 from modules.common.log import setup_logger
-from modules.cm_sop_translate.template import apply_preamble_format, apply_approveTable_format
+from modules.cm_sop_translate.template import apply_preamble_format, apply_approveTable_format, apply_template
 
 logger = setup_logger(log_dir=config.LOG_PATH, name='logs', level=logging.INFO)
 
@@ -913,3 +918,55 @@ def doc_to_docx(doc_path, docx_path=None):
         return False
     finally:
         word.Quit()
+
+#
+# if __name__ == '__main__':
+#     # 生成输出文件名（原文件名+时间）
+#     current_time = datetime.datetime.now().strftime('%y%m%d%H%M%S')
+#     # file_base_name = os.path.splitext(filename)[0]  # 去掉扩展名
+#     # output_filename = f"{file_base_name}_translate_{current_time}.docx"
+#     # output_file = os.path.join(output_folder, output_filename)
+#     # 初始化翻译器
+#     translator = Translator()
+#     input_file = r"D:\Code\Project\tools\data\input\2.docx"
+#     output_file = input_file.replace('.docx', f'_tran_{current_time}.doc')
+#     language = ['英语', '越南语']
+#     print(f"********************start at {current_time}********************")
+#
+#     # 1. 读取原文档内容
+#     doc = Document(input_file)
+#     new_doc = DocumentContent(doc)
+#     # 正文主体
+#     content_data = new_doc.get_content(doc)
+#     # 页眉、页脚
+#     header_data = new_doc.get_header_content(doc)
+#     footer_data = new_doc.get_footer_content(doc)
+#     # picture&shape
+#     pictures = new_doc.extract_pics(doc)
+#     shapes = new_doc.extract_shapes(doc)
+#
+#     # 2. 标注关键信息：大标题、头信息，同时修改content_data内容
+#     after_title = new_doc.flag_title(content_data)
+#     after_preamble = new_doc.flag_preamble(content_data)
+#     after_approve = new_doc.flag_approveTable(content_data)
+#     after_main_text = new_doc.flag_main_text(content_data)
+#
+#     # 3. 拆分封面和正文
+#     data = new_doc.split_cover_body_data(after_main_text)
+#
+#     # 4. 翻译
+#     # ① 翻译封面
+#     translated_cover_data = add_cover_translation(data['cover_data'], translator, language)
+#     # ② 翻译正文内容
+#     after_para = add_paragraph_translation(data['body_data'], translator, language)
+#     translated_body_data = add_table_translation(after_para, translator, language)
+#     # ③ 翻译页眉、页脚
+#     translated_header_data = add_header_translation(header_data, translator, language)
+#     translated_footer_data = add_footer_translation(footer_data, translator, language)
+#
+#     # 5. 处理内容
+#     formatted_content = apply_template(body_data=translated_body_data, header_data=translated_header_data,
+#                                        footer_data=translated_footer_data, cover_data=translated_cover_data)
+#
+#     # 6. 创建新文档
+#     create_new_document(formatted_content, output_file, 2)
