@@ -167,3 +167,19 @@ cython_debug/
 
 #  data
 /data/
+
+# c#输出文件夹
+bin/
+obj/
+
+# 用户特定文件
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio 相关
+.vs/
+.vscode/
+*.csproj.user
+*.cachefile

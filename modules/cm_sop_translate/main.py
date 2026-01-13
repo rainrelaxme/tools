@@ -21,7 +21,7 @@ from modules.cm_sop_translate.excel_process import xls_to_xlsx, get_content, add
 from modules.common.log import setup_logger
 from modules.cm_sop_translate.config.config import config
 from modules.cm_sop_translate.auth import check_license, login
-from modules.cm_sop_translate.doc_process import doc_to_docx, DocumentContent, set_paper_size_format, \
+from modules.cm_sop_translate.word_process import doc_to_docx, DocumentContent, set_paper_size_format, \
     add_content, add_cover_translation, add_paragraph_translation, add_cover, add_table_translation, \
     add_header_translation, add_footer_translation
 from modules.cm_sop_translate.template import apply_header_format, apply_footer_format, apply_template
@@ -224,8 +224,8 @@ def main():
     print("=" * 100)
     print("注意：仅支持运行于windows系统！！！")
     # 首先进行登录验证
-    if not login():
-        exit()
+    # if not login():
+    #     exit()
 
     # 可选：进行许可证检查
     if not check_license():
@@ -238,16 +238,17 @@ def main():
               "3. excel翻译\n"
               "4. 退出")
         option = input().strip()
-        language = ['英语', '越南语']
+        language_with_word = ['英语', '越南语']
+        language_with_excel = ['越南语']
         if option == '1':
-            print(f"当前目标语言为{language}")
-            text_translate(language)
+            print(f"当前目标语言为{language_with_word}")
+            text_translate(language_with_word)
         elif option == '2':
-            print(f"当前目标语言为{language}")
-            docx_translate(language)
+            print(f"当前目标语言为{language_with_word}")
+            docx_translate(language_with_word)
         elif option == '3':
-            print(f"当前目标语言为{language}")
-            excel_translate(language)
+            print(f"当前目标语言为{language_with_excel}")
+            excel_translate(language_with_excel)
         elif option == '4':
             print("\n感谢使用！程序即将退出...")
             input("按回车键关闭窗口...")

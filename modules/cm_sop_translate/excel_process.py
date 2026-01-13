@@ -359,7 +359,7 @@ def extract_shape_from_excel(excel_path, sheet_name, output_folder):
         excelApp.DisplayAlerts = False  # 不显示警告
         excelApp.ScreenUpdating = False  # 禁用屏幕更新以提高性能
 
-        logger.info(f"正在打开Excel文件: {excel_path}, 或缺{sheet_name}的内容。")
+        logger.info(f"正在打开Excel文件: {excel_path}, 获取{sheet_name}的内容。")
 
         # 打开工作簿
         workbook_win32 = excelApp.Workbooks.Open(os.path.abspath(excel_path))
@@ -833,7 +833,7 @@ def replace_shape_on_excel(output_file, src_file, data, method='paste', *shape, 
                     if shape.Type == 17:
                         shape.TextEffect.Text = shape_data['text']
                     shape.Copy()
-                    print("\nori.name:", shape.Name)
+                    # print("\nori.name:", shape.Name)
                     # 等待剪贴板数据到来
                     time.sleep(0.5)
                     target_sheet.Paste()
