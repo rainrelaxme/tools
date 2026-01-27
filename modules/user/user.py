@@ -219,7 +219,13 @@ class User:
 
 
 def main():
-    from shawn.kawang import DATABASE
+    DATABASE = {
+        'host': '106.54.47.212',
+        'port': 3306,
+        'user': 'root',
+        'password': 'MCQM#Yx1nghe!',
+        'database': 'tool'
+    }
     # 初始化用户管理器
     user_manager = User(DATABASE)
 
@@ -235,13 +241,13 @@ def main():
         # 1. 创建用户
         print("=== 创建用户 ===")
         user_info = {
-            "email": "shawn.zzz@foxmail.com",
-            "display_name": "shawn",
+            "email": "xiaoran.zhu@cmtech.com",
+            "display_name": "translator",
             "avatar_url": "https://example.com/avatar.jpg"
         }
         result = user_manager.create_user(
-            username="shawn",
-            password="meiyoumima",
+            username="translator",
+            password="translator",
             **user_info,
         )
         # print(result)
@@ -291,5 +297,5 @@ def main():
         print(delete_result)
 
 
-# if __name__ == "__main__":
-#     main()
+if __name__ == "__main__":
+    main()

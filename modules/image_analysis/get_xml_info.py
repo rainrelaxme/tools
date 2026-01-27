@@ -1,3 +1,16 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*- 
+"""
+@Project : tools
+@File    : get_xml_info.py 
+@Author  : Shawn
+@Date    : 2026/1/23 9:31 
+@Info    : Description of this file
+"""
+
+import os
+import shutil
+from pathlib import Path
 import os
 import csv
 import pandas as pd
@@ -78,21 +91,21 @@ def process_csv_to_xlsx(csv_file_path: str, xml_folder: str, output_xlsx_path: s
             print(f"使用GBK编码也失败: {e2}")
             return
 
-    # 检查第四列是否存在
-    if len(df.columns) < 4:
-        print(f"错误: CSV文件只有{len(df.columns)}列，需要至少4列")
+    # 检查第六列是否存在
+    if len(df.columns) < 6:
+        print(f"错误: CSV文件只有{len(df.columns)}列，需要至少6列")
         return
 
-    # 获取第四列的列名
-    fourth_col_name = df.columns[3]
-    print(f"第四列列名: {fourth_col_name}")
+    # 获取第六列的列名
+    sixth_col_name = df.columns[5]
+    print(f"第六列列名: {sixth_col_name}")
 
     # 创建新的列用于存储XML结果
     xml_results = []
 
     # 处理每一行
     for idx, row in df.iterrows():
-        image_path = str(row[fourth_col_name])
+        image_path = str(row[sixth_col_name])
 
         # 提取XML文件路径
         xml_path = extract_xml_filename_from_image_path(image_path, xml_folder)
@@ -105,18 +118,15 @@ def process_csv_to_xlsx(csv_file_path: str, xml_folder: str, output_xlsx_path: s
         if (idx + 1) % 10 == 0:
             print(f"已处理 {idx + 1}/{len(df)} 行")
 
-    # 将结果添加到DataFrame的第六列
-    # 如果列数不足6列，先添加空列
-    while len(df.columns) < 6:
+    # 将结果添加到DataFrame的第十列
+    # 如果列数不足10列，先添加空列
+    while len(df.columns) < 10:
         df[f'Column_{len(df.columns) + 1}'] = ''
 
-    # 将结果放入第六列（索引5）
-    if len(df.columns) >= 6:
-        sixth_col_name = df.columns[5]
-        df[sixth_col_name] = xml_results
-    else:
-        # 如果不足6列，创建新列
-        df['XML_Result'] = xml_results
+    # 将第十列（索引9）的列名设置为"XML结果"
+    df.columns = list(df.columns[:9]) + ["XML结果"] + list(df.columns[10:])
+    # 将结果放入第十列（索引9）
+    df.iloc[:, 9] = xml_results
 
     # 保存为XLSX文件
     try:
@@ -127,11 +137,11 @@ def process_csv_to_xlsx(csv_file_path: str, xml_folder: str, output_xlsx_path: s
         print(f"保存XLSX文件失败: {e}")
 
 
-def main():
+def get_xml_recognition_results():
     # 配置参数
-    csv_file_path = input("请输入csv文件")  # 替换为你的CSV文件路径
-    xml_folder = input("请输入xml文件所在文件夹")  # 替换为XML文件所在的文件夹路径
-    output_xlsx_path = r"D:\Code\Project\tools\data\output\VM_result"  # 输出XLSX文件路径
+    csv_file_path = input("请输入csv文件:\n")  # 替换为你的CSV文件路径
+    xml_folder = input("请输入xml文件所在文件夹:\n")  # 替换为XML文件所在的文件夹路径
+    output_xlsx_path = r"D:\Code\Project\tools\data\output\VM_result.xlsx"  # 输出XLSX文件路径
 
     # 检查输入文件是否存在
     if not os.path.exists(csv_file_path):
@@ -144,7 +154,3 @@ def main():
 
     # 处理CSV文件
     process_csv_to_xlsx(csv_file_path, xml_folder, output_xlsx_path)
-
-
-if __name__ == "__main__":
-    main()

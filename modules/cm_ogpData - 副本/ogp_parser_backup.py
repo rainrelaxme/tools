@@ -45,27 +45,15 @@ class DataSorterApp:
         left_frame.grid(row=0, column=0, sticky="nsew", padx=(0, 5))
 
         # 处理模式选择
-        # mode_frame = tk.LabelFrame(left_frame, text="处理模式", padx=8, pady=8)
-        # mode_frame.pack(fill="x", pady=(0, 5))
-        #
-        self.process_mode = tk.StringVar(value="summary")  # 默认汇总模式
-        #
-        # tk.Radiobutton(mode_frame, text="仅排序", variable=self.process_mode,
-        #                value="sort", font=("Arial", 9)).pack(anchor="w", pady=2)
-        # tk.Radiobutton(mode_frame, text="排序并汇总", variable=self.process_mode,
-        #                value="summary", font=("Arial", 9)).pack(anchor="w", pady=2)
+        mode_frame = tk.LabelFrame(left_frame, text="处理模式", padx=8, pady=8)
+        mode_frame.pack(fill="x", pady=(0, 5))
 
-        # 文件格式选择
-        format_frame = tk.LabelFrame(left_frame, text="文件格式", padx=8, pady=8)
-        format_frame.pack(fill="x", pady=5)
+        self.process_mode = tk.StringVar(value="summary")  # 默认排序模式
 
-        self.file_format = tk.StringVar(value="format1")  # 默认自动检测
-        # tk.Radiobutton(format_frame, text="自动检测", variable=self.file_format,
-        #                value="auto", font=("Arial", 9)).pack(anchor="w", pady=2)
-        tk.Radiobutton(format_frame, text="格式1: 多表头空行分隔", variable=self.file_format,
-                       value="format1", font=("Arial", 9)).pack(anchor="w", pady=2)
-        tk.Radiobutton(format_frame, text="格式2: 单表头无空行", variable=self.file_format,
-                       value="format2", font=("Arial", 9)).pack(anchor="w", pady=2)
+        tk.Radiobutton(mode_frame, text="仅排序", variable=self.process_mode,
+                       value="sort", font=("Arial", 9)).pack(anchor="w", pady=2)
+        tk.Radiobutton(mode_frame, text="排序并汇总", variable=self.process_mode,
+                       value="summary", font=("Arial", 9)).pack(anchor="w", pady=2)
 
         # 文件选择区域
         file_frame = tk.LabelFrame(left_frame, text="文件选择", padx=8, pady=8)
@@ -187,15 +175,15 @@ class DataSorterApp:
         self.result_text_area = scrolledtext.ScrolledText(result_frame, wrap=tk.WORD, font=("Courier New", 9))
         self.result_text_area.pack(fill="both", expand=True)
 
-        # # 格式说明
-        # info_frame = tk.Frame(right_frame)
-        # info_frame.pack(fill="x", pady=(5, 0))
+        # 汇总模式说明
+        # summary_info_frame = tk.Frame(right_frame)
+        # summary_info_frame.pack(fill="x", pady=(5, 0))
         #
-        # tk.Label(info_frame, text="格式说明:", font=("Arial", 9, "bold")).pack(anchor="w")
-        # info_text = tk.Text(info_frame, height=4, wrap=tk.WORD, font=("Arial", 8), bg="#f0f0f0")
+        # tk.Label(summary_info_frame, text="汇总模式说明:", font=("Arial", 9, "bold")).pack(anchor="w")
+        # info_text = tk.Text(summary_info_frame, height=3, wrap=tk.WORD, font=("Arial", 8), bg="#f0f0f0")
         # info_text.pack(fill="x", pady=2)
         # info_text.insert(1.0,
-        #                  "格式1: 带空行分隔（原始OGP格式）\n格式2: 单表头无空行，通过标签重复区分区块\n自动检测: 程序自动判断文件格式")
+        #                  "1. 按区块排序数据\n2. 调整列顺序并合并实测值\n3. 只保留第一个区块，其他区块的实测值追加到第一区块")
         # info_text.config(state=tk.DISABLED)
 
         # 状态栏
@@ -464,26 +452,16 @@ class DataSorterApp:
 
             # 读取文件
             with open(file_path, 'r', encoding=encoding, errors='ignore') as f:
-            # with open(file_path, 'r', errors='ignore') as f:
                 content = f.read()
-
-            # 确定文件格式
-            file_format = self.detect_file_format(content)
 
             # 根据处理模式选择处理方法
             if self.process_mode.get() == "summary":
                 # 汇总模式
-                if file_format == "format2":
-                    result, block_count = self.summarize_format2_data(content)
-                else:
-                    result, block_count = self.summarize_data(content)
+                result, block_count = self.summarize_data(content)
                 mode_text = "汇总"
             else:
                 # 仅排序模式
-                if file_format == "format2":
-                    result, block_count = self.sort_format2_data(content)
-                else:
-                    result, block_count = self.sort_data(content)
+                result, block_count = self.sort_data(content)
                 mode_text = "排序"
 
             # 确定输出路径
@@ -526,52 +504,9 @@ class DataSorterApp:
         except Exception as e:
             return False, f"[{index}] {os.path.basename(file_path)}: 处理失败 - {str(e)}"
 
-    def detect_file_format(self, content):
-        """检测文件格式"""
-        user_format = self.file_format.get()
-
-        if user_format != "auto":
-            return user_format
-
-        # 自动检测格式
-        lines = content.strip().split('\n')
-
-        # 检查是否有空行
-        has_empty_lines = any(line.strip() == '' for line in lines)
-
-        if has_empty_lines:
-            return "format1"  # 带空行分隔的格式
-
-        # 检查是否是格式2（单表头，通过标签重复区分区块）
-        # 统计标签出现的次数
-        label_counts = {}
-        data_line_pattern = re.compile(r'^\s*(\d+[\*\d]*\s+|[\d\.]+\s+)')
-
-        for line in lines:
-            if data_line_pattern.match(line.strip()):
-                parts = line.strip().split('\t')
-                if parts:
-                    label = parts[0].strip()
-                    label_counts[label] = label_counts.get(label, 0) + 1
-
-        # 如果有标签出现多次，可能是格式2
-        max_count = max(label_counts.values()) if label_counts else 0
-
-        if max_count > 1:
-            # 进一步确认：检查是否有明显的表头行
-            # 格式2通常有特定的表头关键词
-            header_keywords = ['±êÇ©', '³ß´çÀàÐÍ', '±ê×¼Öµ', 'Êµ²âÖµ', 'ÉÏ¹«²î', 'ÏÂ¹«²î', 'Æ«²îÖµ']
-            has_cn_header = any(keyword in content for keyword in header_keywords)
-
-            if has_cn_header:
-                return "format2"
-
-        return "format1"  # 默认为格式1
-
     def show_result_header(self, total_files):
         """显示结果头部信息"""
         mode_text = "排序" if self.process_mode.get() == "sort" else "汇总"
-        format_text = "自动检测" if self.file_format.get() == "auto" else self.file_format.get()
 
         result_info = f"{'=' * 70}\n"
         result_info += f"批量{mode_text}开始 - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
@@ -579,8 +514,7 @@ class DataSorterApp:
         result_info += f"文件总数: {total_files}\n"
         result_info += f"输出文件夹: {self.output_dir.get()}\n"
         result_info += f"表头行数: {self.header_lines.get()}\n"
-        result_info += f"处理模式: {mode_text}\n"
-        result_info += f"文件格式: {format_text}\n\n"
+        result_info += f"处理模式: {mode_text}\n\n"
         result_info += f"{'=' * 70}\n"
         result_info += "处理结果:\n"
         result_info += f"{'=' * 70}\n\n"
@@ -614,13 +548,13 @@ class DataSorterApp:
         self.append_result(summary)
 
     def sort_data(self, content):
-        """仅排序模式：处理文件内容，按区块排序第一列数据（格式1）"""
+        """仅排序模式：处理文件内容，按区块排序第一列数据"""
         lines = content.strip().split('\n')
         blocks = []
         current_block = []
         data_line_pattern = re.compile(r'^\s*(\d+[\*\d]*)\s+')
 
-        # 识别区块（通过空行分隔）
+        # 识别区块
         for line in lines:
             if line.strip() == '':
                 if current_block:
@@ -649,43 +583,9 @@ class DataSorterApp:
 
         return '\n'.join(result_lines), block_count
 
-    def sort_format2_data(self, content):
-        """仅排序模式：处理格式2的数据（单表头无空行）"""
-        lines = content.strip().split('\n')
-        block_count = 1  # 格式2只有一个表头，数据是连续的
-
-        # 分离表头和数据
-        header_lines = []
-        data_lines = []
-        header_end_index = -1
-
-        # 找到表头结束的位置
-        data_line_pattern = re.compile(r'^\s*(\d+[\*\d]*\s+|[\d\.]+\s+)')
-        for i, line in enumerate(lines):
-            if data_line_pattern.match(line.strip()):
-                header_end_index = i
-                break
-            else:
-                header_lines.append(line)
-
-        # 如果没找到数据行，直接返回原始内容
-        if header_end_index == -1:
-            return content, 0
-
-        # 提取所有数据行
-        data_lines = lines[header_end_index:]
-
-        # 按标签排序数据行
-        sorted_data_lines = self.sort_data_lines(data_lines, data_line_pattern)
-
-        # 重新组合
-        result_lines = header_lines + sorted_data_lines
-
-        return '\n'.join(result_lines), block_count
-
     def summarize_data(self, content):
         """
-        汇总模式：处理格式1的数据
+        汇总模式：
         1. 先排序数据
         2. 调整列顺序并合并实测值
         3. 只保留第一个区块
@@ -695,7 +595,7 @@ class DataSorterApp:
         current_block = []
         data_line_pattern = re.compile(r'^\s*(\d+[\*\d]*)\s+')
 
-        # 识别区块（通过空行分隔）
+        # 识别区块
         for line in lines:
             if line.strip() == '':
                 if current_block:
@@ -736,192 +636,6 @@ class DataSorterApp:
 
         return '\n'.join(result_block), block_count
 
-    def summarize_format2_data(self, content):
-        """
-        汇总模式：处理格式2的数据（单表头无空行）
-        通过标签重复来识别不同的数据块
-        """
-        lines = content.strip().split('\n')
-
-        # 分离表头和数据
-        header_lines = []
-        data_lines = []
-        # data_line_pattern = re.compile(r'^\s*(\d+[\*\d]*\s+|[\d\.]+\s+)')
-        data_line_pattern = re.compile(r'^[A-Za-z0-9_\-+=*.@#\$%^&()\[\]{}\|;:,.<>?/ \t].*')
-
-        for i, line in enumerate(lines):
-            if data_line_pattern.match(line.strip()):
-                # 从第一个数据行开始
-                data_lines = lines[i:]
-                header_lines = lines[:i]
-                break
-
-        if not data_lines:
-            return content, 0
-
-        # 解析数据行，通过标签重复来识别区块
-        blocks = self.split_blocks_by_label_repeat(data_lines)
-        block_count = len(blocks)
-
-        if block_count == 0:
-            return content, 0
-
-        if block_count == 1:
-            # 只有一个区块，只需调整列顺序
-            result_block = header_lines + self.reorder_and_format_block_format2(blocks[0])
-            return '\n'.join(result_block), block_count
-
-        # 多个区块的情况
-        # 1. 从所有区块提取数据
-        all_data = self.extract_data_from_blocks_format2(blocks)
-
-        # 2. 按照标签排序数据
-        sorted_data = self.sort_extracted_data(all_data)
-
-        # 3. 重新构建输出
-        result_block = self.rebuild_output_block_format2(header_lines, sorted_data)
-
-        return '\n'.join(result_block), block_count
-
-    def split_blocks_by_label_repeat(self, data_lines):
-        """
-        通过标签重复来拆分数据块
-        返回列表，每个元素是一个区块的数据行
-        """
-        blocks = []
-        current_block = []
-        seen_labels = set()
-        block_started = False
-
-        for line in data_lines:
-            # 解析标签
-            columns = line.strip().split('\t')
-            if not columns:
-                continue
-
-            label = columns[0].strip()
-
-            # 如果是第一次看到这个标签，或者标签重复出现
-            if label in seen_labels and block_started:
-                # 标签重复，开始新的区块
-                blocks.append(current_block)
-                current_block = []
-                seen_labels = {label}
-                current_block.append(line)
-            else:
-                # 继续当前区块
-                current_block.append(line)
-                seen_labels.add(label)
-                block_started = True
-
-        # 添加最后一个区块
-        if current_block:
-            blocks.append(current_block)
-
-        return blocks
-
-    def extract_data_from_blocks_format2(self, blocks):
-        """
-        从格式2的所有区块中提取数据
-        返回字典：{标签: {区块索引: 数据行}}
-        """
-        data_dict = {}
-
-        for block_idx, block in enumerate(blocks):
-            for line in block:
-                columns = self.parse_data_line_format2(line)
-                if columns and len(columns) >= 6:
-                    label = columns[0]  # 第一列是标签
-                    if label not in data_dict:
-                        data_dict[label] = {}
-                    data_dict[label][block_idx] = columns
-
-        return data_dict
-
-    def parse_data_line_format2(self, line):
-        """解析格式2的数据行"""
-        # 格式2的数据行通常是制表符分隔的
-        columns = line.strip().split('\t')
-        if len(columns) >= 6:
-            return columns
-        return None
-
-    def reorder_and_format_block_format2(self, block):
-        """调整格式2单个区块的列顺序"""
-        formatted_lines = []
-
-        for line in block:
-            columns = self.parse_data_line_format2(line)
-            if columns and len(columns) >= 6:
-                # 格式2的列顺序：标签, 标准值, 上公差, 下公差, 偏差值, 实测值
-                # 我们需要重新排序为：标签, 类型(?), 标准值, 上公差, 下公差, 实测值
-                label = columns[0]
-                nominal = columns[1]
-                upper_tol = columns[2]
-                lower_tol = columns[3]
-                deviation = columns[4]  # 偏差值，可能不需要
-                measured = columns[5]
-
-                # 格式化数字
-                nominal_formatted = self.format_number(nominal)
-                upper_tol_formatted = self.format_number(upper_tol)
-                lower_tol_formatted = self.format_number(lower_tol)
-                measured_formatted = self.format_number(measured)
-
-                # 构建格式化行
-                # 注意：格式2没有明确的"类型"列，我们可以用默认值或留空
-                dim_type = "D"  # 默认类型
-                formatted_line = f"{label}\t{dim_type}\t{nominal_formatted}\t{upper_tol_formatted}\t{lower_tol_formatted}\t{measured_formatted}"
-                formatted_lines.append(formatted_line)
-            else:
-                formatted_lines.append(line)
-
-        return formatted_lines
-
-    def rebuild_output_block_format2(self, header, sorted_data):
-        """重新构建格式2的输出区块"""
-        result = header.copy()
-
-        # 修改表头行
-        if result:
-            # 修改最后一行表头
-            last_header = result[-1]
-            header_parts = last_header.strip().split('\t')
-            if len(header_parts) >= 6:
-                # 格式2的表头通常是中文，我们需要修改为合适的格式
-                # 创建一个简化的表头
-                result[-1] = "标签\t尺寸类型\t标准值\t上公差\t下公差\t实测值"
-
-        for sort_key, label, block_data in sorted_data:
-            # 获取第一个区块的数据作为基础
-            if 0 in block_data:
-                base_columns = block_data[0]
-
-                # 提取基础信息
-                dim_type = base_columns[1]
-                nominal = self.format_number(base_columns[2])
-                upper_tol = self.format_number(base_columns[4])
-                lower_tol = self.format_number(base_columns[5])
-                other_cols = base_columns[6:]  # 第6,7,8列
-
-                # 收集所有区块的实测值
-                measurements = []
-                for block_idx in sorted(block_data.keys()):
-                    block_columns = block_data[block_idx]
-                    if len(block_columns) >= 6:
-                        measurements.append(self.format_number(block_columns[3]))  # 实测值在第6列
-
-                # 构建输出行
-                formatted_line = f"{label}\t{dim_type}\t{nominal}\t{upper_tol}\t{lower_tol}"
-
-                # 添加所有实测值
-                for measurement in measurements:
-                    formatted_line += f"\t{measurement}"
-
-                result.append(formatted_line)
-
-        return result
-
     def process_block(self, block, data_line_pattern):
         """处理单个区块（排序）"""
         data_start = -1
@@ -956,7 +670,7 @@ class DataSorterApp:
         for i, line in enumerate(data_lines):
             match = data_line_pattern.match(line)
             if match:
-                first_col = match.group(1).strip()
+                first_col = match.group(1)
                 if '*' in first_col:
                     try:
                         parts = first_col.split('*')
@@ -1011,6 +725,11 @@ class DataSorterApp:
         columns = line.strip().split('\t')
         if len(columns) >= 6:
             return columns
+        # else:
+        #     # 尝试用制表符分割
+        #     columns = line.strip().split('\t')
+        #     if len(columns) >= 6:
+        #         return columns
 
         return None
 
@@ -1056,6 +775,58 @@ class DataSorterApp:
         data_list.sort(key=lambda x: x[0])
 
         return data_list
+
+    # def sort_extracted_data(self, data_dict):
+    #     """对提取的数据进行排序"""
+    #     # 将数据转换为列表以便排序
+    #     data_list = []
+    #     for label, block_data in data_dict.items():
+    #         # 解析标签以便排序
+    #         if '*' in label:
+    #             try:
+    #                 parts = label.split('*')
+    #                 sort_key = (int(parts[0]), int(parts[1]))
+    #             except ValueError:
+    #                 sort_key = (float('inf'), 0)
+    #         else:
+    #             try:
+    #                 sort_key = (int(label), 0)
+    #             except ValueError:
+    #                 sort_key = (float('inf'), 0)
+    #
+    #         data_list.append((sort_key, label, block_data))
+    #
+    #     # 按标签排序
+    #     data_list.sort(key=lambda x: x[0])
+    #
+    #     return data_list
+
+
+    # def sort_extracted_data(self, data_dict):
+    #     """对提取的数据进行排序"""
+    #     data_list = []
+    #
+    #     for i, (label, block_data) in enumerate(data_dict.items()):
+    #         # 解析排序键（与sort_data_lines完全相同的逻辑）
+    #         if '*' in label:
+    #             try:
+    #                 parts = label.split('*')
+    #                 sort_key = (int(parts[0]), int(parts[1]))
+    #             except ValueError:
+    #                 sort_key = (float('inf'), i)
+    #         else:
+    #             try:
+    #                 sort_key = (int(label), 0)
+    #             except ValueError:
+    #                 sort_key = (float('inf'), i)
+    #
+    #         data_list.append((sort_key, label, block_data))
+    #
+    #     # 排序
+    #     data_list.sort(key=lambda x: x[0])
+    #
+    #     # 返回排序后的字典
+    #     return {label: block_data for _, label, block_data in data_list}
 
     def reorder_and_format_block(self, block):
         """调整单个区块的列顺序"""
@@ -1161,14 +932,11 @@ def detect_encoding(file_path):
         with open(file_path, 'rb') as f:
             raw_data = f.read(4096)
             result = chardet.detect(raw_data)
-            # result = chardet.detect(f.read())
-
             encoding = result['encoding']
             confidence = result['confidence']
 
             if not encoding or confidence < 0.7:
                 encoding = 'utf-8'
-            print("****************", encoding, confidence)
             return encoding
     except Exception as e:
         print(f"编码检测失败: {e}")
