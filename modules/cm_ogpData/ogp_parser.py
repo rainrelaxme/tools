@@ -17,14 +17,7 @@ import chardet
 from tkinter import ttk
 import threading
 import copy
-
-# Excel处理相关导入
-try:
-    import pandas as pd
-    PANDAS_AVAILABLE = True
-except ImportError:
-    PANDAS_AVAILABLE = False
-
+import pandas as pd
 
 class DataSorterApp:
     def __init__(self, root):
@@ -54,7 +47,7 @@ class DataSorterApp:
         
         # 创建第一个Tab：OGP数据处理（原有功能）
         self.ogp_frame = tk.Frame(self.notebook)
-        self.notebook.add(self.ogp_frame, text="OGP数据处理")
+        self.notebook.add(self.ogp_frame, text="OGP")
         self.create_ogp_widgets()
         
         # 创建第二个Tab：三次元数据处理
@@ -81,11 +74,6 @@ class DataSorterApp:
         # mode_frame.pack(fill="x", pady=(0, 5))
         #
         self.process_mode = tk.StringVar(value="summary")  # 默认汇总模式
-        #
-        # tk.Radiobutton(mode_frame, text="仅排序", variable=self.process_mode,
-        #                value="sort", font=("Arial", 9)).pack(anchor="w", pady=2)
-        # tk.Radiobutton(mode_frame, text="排序并汇总", variable=self.process_mode,
-        #                value="summary", font=("Arial", 9)).pack(anchor="w", pady=2)
 
         # 文件格式选择
         format_frame = tk.LabelFrame(left_frame, text="文件格式", padx=8, pady=8)
@@ -218,17 +206,6 @@ class DataSorterApp:
         # 使用ScrolledText显示结果
         self.result_text_area = scrolledtext.ScrolledText(result_frame, wrap=tk.WORD, font=("Courier New", 9))
         self.result_text_area.pack(fill="both", expand=True)
-
-        # # 格式说明
-        # info_frame = tk.Frame(right_frame)
-        # info_frame.pack(fill="x", pady=(5, 0))
-        #
-        # tk.Label(info_frame, text="格式说明:", font=("Arial", 9, "bold")).pack(anchor="w")
-        # info_text = tk.Text(info_frame, height=4, wrap=tk.WORD, font=("Arial", 8), bg="#f0f0f0")
-        # info_text.pack(fill="x", pady=2)
-        # info_text.insert(1.0,
-        #                  "格式1: 带空行分隔（原始OGP格式）\n格式2: 单表头无空行，通过标签重复区分区块\n自动检测: 程序自动判断文件格式")
-        # info_text.config(state=tk.DISABLED)
 
         # 配置网格权重
         main_frame.grid_columnconfigure(0, weight=1)
@@ -910,15 +887,24 @@ class DataSorterApp:
         """重新构建格式2的输出区块"""
         result = header.copy()
 
+        # 确定最大实测值数量（即最大区块数）
+        max_block_count = 0
+        for sort_key, label, block_data in sorted_data:
+            block_count = len(block_data)
+            if block_count > max_block_count:
+                max_block_count = block_count
+
         # 修改表头行
         if result:
             # 修改最后一行表头
             last_header = result[-1]
             header_parts = last_header.strip().split('\t')
             if len(header_parts) >= 6:
-                # 格式2的表头通常是中文，我们需要修改为合适的格式
-                # 创建一个简化的表头
-                result[-1] = "标签\t尺寸类型\t标准值\t上公差\t下公差\t实测值"
+                # 构建新的表头，添加实测值#1, 实测值#2等
+                formatted_title = "标签\t尺寸类型\t标准值\t上公差\t下公差"
+                for i in range(1, max_block_count + 1):
+                    formatted_title += f"\t实测值#{i}"
+                result[-1] = formatted_title
 
         for sort_key, label, block_data in sorted_data:
             # 获取第一个区块的数据作为基础
@@ -930,7 +916,6 @@ class DataSorterApp:
                 nominal = self.format_number(base_columns[2])
                 upper_tol = self.format_number(base_columns[4])
                 lower_tol = self.format_number(base_columns[5])
-                other_cols = base_columns[6:]  # 第6,7,8列
 
                 # 收集所有区块的实测值
                 measurements = []
@@ -985,20 +970,63 @@ class DataSorterApp:
             match = data_line_pattern.match(line)
             if match:
                 first_col = match.group(1).strip()
-                if '*' in first_col:
-                    try:
-                        parts = first_col.split('*')
-                        key = (int(parts[0]), int(parts[1]))
-                    except ValueError:
-                        key = (float('inf'), i)
-                else:
-                    try:
-                        key = (int(first_col), 0)
-                    except ValueError:
-                        key = (float('inf'), i)
-                data_with_keys.append((key, line))
+                
+                # 初始化排序键
+                sort_key = None
+                
+                try:
+                    # 检查是否以数字开头
+                    if first_col[0].isdigit():
+                        # 数字开头的标签
+                        if '*' in first_col:
+                            # 处理带星号的标签，如 "15*1", "15*2"
+                            num_parts = first_col.split('*')
+                            main_num = int(num_parts[0])
+                            sub_num = int(num_parts[1]) if len(num_parts) > 1 else 0
+                            sort_key = (0, '', main_num, sub_num, i)
+                        else:
+                            # 处理纯数字标签，如 "1", "2", "11"
+                            main_num = int(first_col)
+                            sort_key = (0, '', main_num, 0, i)
+                    else:
+                        # 字母开头的标签
+                        # 提取字母部分和数字部分
+                        alpha_part = ''
+                        num_part = ''
+                        star_part = ''
+                        
+                        # 找到第一个数字的位置
+                        for j, char in enumerate(first_col):
+                            if char.isdigit():
+                                alpha_part = first_col[:j]
+                                remaining = first_col[j:]
+                                # 处理可能的星号
+                                if '*' in remaining:
+                                    num_star_parts = remaining.split('*')
+                                    num_part = num_star_parts[0]
+                                    star_part = num_star_parts[1] if len(num_star_parts) > 1 else '0'
+                                else:
+                                    num_part = remaining
+                                    star_part = '0'
+                                break
+                        
+                        # 转换数字部分为整数
+                        try:
+                            num_val = int(num_part)
+                            star_val = int(star_part)
+                        except ValueError:
+                            num_val = 0
+                            star_val = 0
+                        
+                        # 字母开头的排序键
+                        sort_key = (1, alpha_part, num_val, star_val, i)
+                except (ValueError, IndexError):
+                    # 如果解析失败，放到最后
+                    sort_key = (2, '', 0, 0, i)
+                
+                data_with_keys.append((sort_key, line))
             else:
-                data_with_keys.append(((float('inf'), i), line))
+                data_with_keys.append(((2, '', 0, 0, i), line))
 
         data_with_keys.sort(key=lambda x: x[0])
 
@@ -1060,23 +1088,55 @@ class DataSorterApp:
                 main_part = parts[0]
                 suffix = parts[1] if len(parts) > 1 else ""
 
-                if '*' in main_part:
-                    # 处理带星号的标签，如 "4*1", "20*20"
-                    num_parts = main_part.split('*')
-                    main_num = int(num_parts[0])
-                    sub_num = int(num_parts[1]) if len(num_parts) > 1 else 0
-
-                    # 特殊处理：对于 20*20 X，我们希望它排在 20*3 X 之后
-                    # 所以需要将 sub_num 作为主要排序因素之一
-                    sort_key = (main_num, sub_num, 1 if suffix else 0, suffix, label_stripped)
+                # 检查是否以数字开头
+                if main_part[0].isdigit():
+                    # 数字开头的标签
+                    if '*' in main_part:
+                        # 处理带星号的标签，如 "15*1", "15*2"
+                        num_parts = main_part.split('*')
+                        main_num = int(num_parts[0])
+                        sub_num = int(num_parts[1]) if len(num_parts) > 1 else 0
+                        sort_key = (0, '', main_num, sub_num, suffix, label_stripped)
+                    else:
+                        # 处理纯数字标签，如 "1", "2", "11"
+                        main_num = int(main_part)
+                        sort_key = (0, '', main_num, 0, suffix, label_stripped)
                 else:
-                    # 处理普通数字标签，如 "22", "6 X"
-                    main_num = int(main_part)
-                    sort_key = (main_num, 0, 1 if suffix else 0, suffix, label_stripped)
+                    # 字母开头的标签
+                    # 提取字母部分和数字部分
+                    alpha_part = ''
+                    num_part = ''
+                    star_part = ''
+                    
+                    # 找到第一个数字的位置
+                    for i, char in enumerate(main_part):
+                        if char.isdigit():
+                            alpha_part = main_part[:i]
+                            remaining = main_part[i:]
+                            # 处理可能的星号
+                            if '*' in remaining:
+                                num_star_parts = remaining.split('*')
+                                num_part = num_star_parts[0]
+                                star_part = num_star_parts[1] if len(num_star_parts) > 1 else '0'
+                            else:
+                                num_part = remaining
+                                star_part = '0'
+                            break
+                    
+                    # 转换数字部分为整数
+                    try:
+                        num_val = int(num_part)
+                        star_val = int(star_part)
+                    except ValueError:
+                        num_val = 0
+                        star_val = 0
+                    
+                    # 字母开头的排序键：(1, 字母部分, 数字部分, 星号部分, 后缀, 原始标签)
+                    sort_key = (1, alpha_part, num_val, star_val, suffix, label_stripped)
 
             except (ValueError, IndexError):
                 # 如果解析失败，放到最后
-                sort_key = (float('inf'), 0, 0, '', label_stripped)
+                sort_key = (2, '', 0, 0, '', label_stripped)
 
             data_list.append((sort_key, label, block_data))
 
@@ -1125,16 +1185,26 @@ class DataSorterApp:
     def rebuild_output_block(self, header, sorted_data):
         """重新构建输出区块"""
         result = header.copy()
+        
+        # 确定最大实测值数量（即最大区块数）
+        max_block_count = 0
+        for sort_key, label, block_data in sorted_data:
+            block_count = len(block_data)
+            if block_count > max_block_count:
+                max_block_count = block_count
+        
         # 排序标题行
         title = result[-1].split('\t')
         label = title[0]
         dim_type = title[1]
         nominal = title[2]
-        measured = title[3]
         upper_tol = title[4]
         lower_tol = title[5]
-        other = title[6:]
-        formatted_title = f"{label}\t{dim_type}\t{nominal}\t{upper_tol}\t{lower_tol}\t{measured}"
+        
+        # 构建新的表头，添加实测值#1, 实测值#2等
+        formatted_title = f"{label}\t{dim_type}\t{nominal}\t{upper_tol}\t{lower_tol}"
+        for i in range(1, max_block_count + 1):
+            formatted_title += f"\t实测值#{i}"
         result[-1] = formatted_title
 
         for sort_key, label, block_data in sorted_data:
@@ -1147,7 +1217,6 @@ class DataSorterApp:
                 nominal = self.format_number(base_columns[2])
                 upper_tol = base_columns[4]
                 lower_tol = base_columns[5]
-                other_cols = base_columns[6:]  # 第6,7,8列
 
                 # 收集所有区块的实测值
                 measurements = []
@@ -1745,7 +1814,67 @@ class DataSorterApp:
         output_rows.append(header)
 
         # 数据行（按尺寸、描述和轴排序）
-        sorted_keys = sorted(all_data.keys(), key=lambda x: (str(x[0]), str(x[1]), str(x[2])))
+        def get_sort_key(key):
+            """生成排序键，与OGP数据排序方式一致"""
+            size, description, axis = key
+            size_str = str(size).strip()
+            
+            # 初始化排序键
+            sort_key = None
+            
+            try:
+                # 检查是否以数字开头
+                if size_str and size_str[0].isdigit():
+                    # 数字开头的标签
+                    if '*' in size_str:
+                        # 处理带星号的标签，如 "15*1", "15*2"
+                        num_parts = size_str.split('*')
+                        main_num = int(num_parts[0])
+                        sub_num = int(num_parts[1]) if len(num_parts) > 1 else 0
+                        sort_key = (0, '', main_num, sub_num, description, axis)
+                    else:
+                        # 处理纯数字标签，如 "1", "2", "11"
+                        main_num = int(size_str)
+                        sort_key = (0, '', main_num, 0, description, axis)
+                else:
+                    # 字母开头的标签
+                    # 提取字母部分和数字部分
+                    alpha_part = ''
+                    num_part = ''
+                    star_part = ''
+                    
+                    # 找到第一个数字的位置
+                    for i, char in enumerate(size_str):
+                        if char.isdigit():
+                            alpha_part = size_str[:i]
+                            remaining = size_str[i:]
+                            # 处理可能的星号
+                            if '*' in remaining:
+                                num_star_parts = remaining.split('*')
+                                num_part = num_star_parts[0]
+                                star_part = num_star_parts[1] if len(num_star_parts) > 1 else '0'
+                            else:
+                                num_part = remaining
+                                star_part = '0'
+                            break
+                    
+                    # 转换数字部分为整数
+                    try:
+                        num_val = int(num_part)
+                        star_val = int(star_part)
+                    except ValueError:
+                        num_val = 0
+                        star_val = 0
+                    
+                    # 字母开头的排序键：(1, 字母部分, 数字部分, 星号部分, 描述, 轴)
+                    sort_key = (1, alpha_part, num_val, star_val, description, axis)
+            except (ValueError, IndexError):
+                # 如果解析失败，放到最后
+                sort_key = (2, '', 0, 0, description, axis)
+            
+            return sort_key
+        
+        sorted_keys = sorted(all_data.keys(), key=get_sort_key)
 
         for key in sorted_keys:
             size, description, axis = key

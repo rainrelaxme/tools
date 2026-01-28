@@ -55,6 +55,10 @@ class ZoomableImage:
         self.load_image()
 
         # 绑定事件
+        self.bind_events()
+    
+    def bind_events(self):
+        """绑定事件"""
         self.canvas.bind("<MouseWheel>", self.on_mousewheel)  # Windows
         self.canvas.bind("<Button-4>", self.on_mousewheel)  # Linux向上滚动
         self.canvas.bind("<Button-5>", self.on_mousewheel)  # Linux向下滚动
@@ -62,6 +66,50 @@ class ZoomableImage:
         self.canvas.bind("<B1-Motion>", self.on_mouse_drag)
         self.canvas.bind("<ButtonRelease-1>", self.on_button_release)
         self.canvas.bind("<Button-3>", self.on_right_click)  # 右键点击
+    
+    def unbind_events(self):
+        """解绑事件"""
+        try:
+            self.canvas.unbind("<MouseWheel>")
+            self.canvas.unbind("<Button-4>")
+            self.canvas.unbind("<Button-5>")
+            self.canvas.unbind("<ButtonPress-1>")
+            self.canvas.unbind("<B1-Motion>")
+            self.canvas.unbind("<ButtonRelease-1>")
+            self.canvas.unbind("<Button-3>")
+        except Exception as e:
+            pass
+    
+    def release_resources(self):
+        """释放资源"""
+        # 解绑事件
+        self.unbind_events()
+        
+        # 清除画布内容
+        if self.canvas:
+            try:
+                if self.image_id:
+                    self.canvas.delete(self.image_id)
+                if self.info_label_id:
+                    self.canvas.delete(self.info_label_id)
+                if self.info_bg_id:
+                    self.canvas.delete(self.info_bg_id)
+            except Exception as e:
+                pass
+        
+        # 释放图片资源
+        if self.image:
+            try:
+                self.image.close()
+            except Exception as e:
+                pass
+            self.image = None
+        
+        # 清除引用
+        self.image_tk = None
+        self.canvas = None
+        self.select_callback = None
+        self.right_click_callback = None
 
     def load_image(self):
         """加载图片"""
@@ -736,9 +784,16 @@ class ImageComparisonApp:
             vm_info = str(self.df.iloc[self.current_row_index, 1]) if not pd.isna(
                 self.df.iloc[self.current_row_index, 1]) else ""
 
+        # 释放旧的SG图片资源
+        if self.sg_zoomable_image:
+            try:
+                self.sg_zoomable_image.release_resources()
+            except Exception as e:
+                pass
+            self.sg_zoomable_image = None
+
         # 清除SG画布内容
         self.sg_canvas.delete("all")
-        self.sg_zoomable_image = None  # 清除旧的可缩放图片对象
 
         # 加载SG图片
         sg_path = self.get_image_path(5, self.current_row_index)
@@ -752,9 +807,16 @@ class ImageComparisonApp:
                                        text="图片不存在", fill="red")
             self.sg_click_hint.place_forget()
 
+        # 释放旧的VM图片资源
+        if self.vm_zoomable_image:
+            try:
+                self.vm_zoomable_image.release_resources()
+            except Exception as e:
+                pass
+            self.vm_zoomable_image = None
+
         # 清除VM画布内容
         self.vm_canvas.delete("all")
-        self.vm_zoomable_image = None  # 清除旧的可缩放图片对象
 
         # 加载VM图片
         vm_path = self.get_image_path(6, self.current_row_index)
