@@ -30,7 +30,7 @@ except ImportError:
 class DataSorterApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("OGP数据排序工具 - 批量版")
+        self.root.title("测量数据汇总工具")
         self.root.geometry("900x850")
 
         # 设置默认值
@@ -131,16 +131,6 @@ class DataSorterApp:
         self.file_count_label = tk.Label(file_frame, text="已选择 0 个文件", fg="blue", font=("Arial", 9))
         self.file_count_label.pack(anchor="w")
 
-        # 文件格式选择
-        format_frame = tk.LabelFrame(left_frame, text="文件格式", padx=8, pady=8)
-        format_frame.pack(fill="x", pady=5)
-
-        self.file_format = tk.StringVar(value="format1")  # 默认自动检测
-        tk.Radiobutton(format_frame, text="格式1: 多表头空行分隔", variable=self.file_format,
-                       value="format1", font=("Arial", 9)).pack(anchor="w", pady=2)
-        tk.Radiobutton(format_frame, text="格式2: 单表头无空行", variable=self.file_format,
-                       value="format2", font=("Arial", 9)).pack(anchor="w", pady=2)
-
         # 输出文件夹选择区域
         output_frame = tk.LabelFrame(left_frame, text="输出设置", padx=8, pady=8)
         output_frame.pack(fill="x", pady=5)
@@ -162,9 +152,7 @@ class DataSorterApp:
         tk.Checkbutton(options_frame, text="创建子文件夹", variable=self.create_subfolder,
                        font=("Arial", 9)).pack(anchor="w")
 
-        self.overwrite_existing = tk.BooleanVar(value=False)
-        tk.Checkbutton(options_frame, text="覆盖已存在文件", variable=self.overwrite_existing,
-                       font=("Arial", 9)).pack(anchor="w")
+        
 
         # 参数设置区域
         param_frame = tk.LabelFrame(left_frame, text="处理参数", padx=8, pady=8)
@@ -203,129 +191,152 @@ class DataSorterApp:
         self.result_text_area = scrolledtext.ScrolledText(result_frame, wrap=tk.WORD, font=("Courier New", 9))
         self.result_text_area.pack(fill="both", expand=True)
 
-    def browse_files(self):
-        """浏览并选择多个文件"""
+    def browse_files_generic(self, title, filetypes, file_paths_var, tree_var, count_label_var, output_dir_var, start_button_var, pandas_check=False):
+        """通用文件选择方法（OGP和三次元兼容）"""
+        if pandas_check and not PANDAS_AVAILABLE:
+            messagebox.showerror("错误", "pandas库未安装，无法处理Excel文件。\n请运行: pip install pandas openpyxl")
+            return
+
         filenames = filedialog.askopenfilenames(
-            title="选择OGP数据文件",
-            filetypes=[("Excel/Text files", "*.xls *.xlsx *.txt *.csv"), ("All files", "*.*")]
+            title=title,
+            filetypes=filetypes
         )
 
         if filenames:
+            file_paths = getattr(self, file_paths_var)
+            tree = getattr(self, tree_var)
+            count_label = getattr(self, count_label_var)
+            output_dir = getattr(self, output_dir_var)
+            start_button = getattr(self, start_button_var)
+
             for filename in filenames:
-                if filename not in self.file_paths:
-                    self.file_paths.append(filename)
+                if filename not in file_paths:
+                    file_paths.append(filename)
                     # 添加到Treeview
-                    index = len(self.file_paths)
-                    self.file_tree.insert("", "end", values=(
+                    index = len(file_paths)
+                    tree.insert("", "end", values=(
                         index,
                         os.path.basename(filename)
                     ))
 
             # 更新统计信息
-            self.update_file_count()
+            self.update_file_count_generic(file_paths_var, count_label_var, start_button_var, pandas_check)
 
             # 自动设置输出文件夹为第一个文件所在目录
-            if self.file_paths and (not self.output_dir.get() or self.output_dir.get() == os.path.expanduser("~")):
-                input_dir = os.path.dirname(self.file_paths[0])
-                self.output_dir.set(input_dir)
+            if file_paths and (not output_dir.get() or output_dir.get() == os.path.expanduser("~")):
+                input_dir = os.path.dirname(file_paths[0])
+                output_dir.set(input_dir)
 
             self.status_bar.config(text=f"已添加 {len(filenames)} 个文件")
 
-    def browse_output_dir(self):
-        """浏览并选择输出文件夹"""
+    def browse_output_dir_generic(self, title, output_dir_var):
+        """通用输出文件夹选择方法（OGP和三次元兼容）"""
+        output_dir = getattr(self, output_dir_var)
         dirname = filedialog.askdirectory(
-            title="选择输出文件夹",
-            initialdir=self.output_dir.get()
+            title=title,
+            initialdir=output_dir.get()
         )
         if dirname:
-            self.output_dir.set(dirname)
+            output_dir.set(dirname)
             self.status_bar.config(text=f"输出文件夹: {dirname}")
 
-    def clear_file_list(self):
-        """清空文件列表"""
-        if self.file_paths:
+    def clear_file_list_generic(self, file_paths_var, tree_var, count_label_var, start_button_var, pandas_check=False):
+        """通用清空文件列表方法（OGP和三次元兼容）"""
+        file_paths = getattr(self, file_paths_var)
+        if file_paths:
             if messagebox.askyesno("确认", "确定要清空所有文件吗？"):
-                self.file_paths.clear()
+                file_paths.clear()
                 # 清空Treeview
-                for item in self.file_tree.get_children():
-                    self.file_tree.delete(item)
-                self.update_file_count()
+                tree = getattr(self, tree_var)
+                for item in tree.get_children():
+                    tree.delete(item)
+                self.update_file_count_generic(file_paths_var, count_label_var, start_button_var, pandas_check)
                 self.status_bar.config(text="已清空文件列表")
 
-    def remove_selected_files(self):
-        """移除选中的文件"""
-        selected_items = self.file_tree.selection()
+    def remove_selected_files_generic(self, tree_var, file_paths_var, count_label_var, start_button_var, pandas_check=False):
+        """通用移除选中文件方法（OGP和三次元兼容）"""
+        tree = getattr(self, tree_var)
+        selected_items = tree.selection()
         if not selected_items:
             messagebox.showinfo("提示", "请先选择要移除的文件")
             return
 
         # 确认移除
         if messagebox.askyesno("确认", f"确定要移除选中的 {len(selected_items)} 个文件吗？"):
+            file_paths = getattr(self, file_paths_var)
             for item in selected_items:
-                values = self.file_tree.item(item, "values")
+                values = tree.item(item, "values")
                 if values:
                     # 从文件路径列表中移除
                     filename = values[1]
                     # 需要找到完整路径
-                    for file_path in self.file_paths[:]:
+                    for file_path in file_paths[:]:
                         if os.path.basename(file_path) == filename:
-                            self.file_paths.remove(file_path)
+                            file_paths.remove(file_path)
                             break
                 # 从Treeview中移除
-                self.file_tree.delete(item)
+                tree.delete(item)
 
             # 重新排序
-            self.reorder_file_list()
-            self.update_file_count()
+            self.reorder_file_list_generic(tree_var, file_paths_var)
+            self.update_file_count_generic(file_paths_var, count_label_var, start_button_var, pandas_check)
             self.status_bar.config(text=f"已移除 {len(selected_items)} 个文件")
 
-    def reorder_file_list(self):
-        """重新排序文件列表"""
+    def reorder_file_list_generic(self, tree_var, file_paths_var):
+        """通用重新排序文件列表方法（OGP和三次元兼容）"""
+        tree = getattr(self, tree_var)
+        file_paths = getattr(self, file_paths_var)
         # 清空Treeview
-        for item in self.file_tree.get_children():
-            self.file_tree.delete(item)
+        for item in tree.get_children():
+            tree.delete(item)
 
         # 重新添加
-        for i, filename in enumerate(self.file_paths, 1):
-            self.file_tree.insert("", "end", values=(
+        for i, filename in enumerate(file_paths, 1):
+            tree.insert("", "end", values=(
                 i,
                 os.path.basename(filename)
             ))
 
-    def update_file_count(self):
-        """更新文件计数"""
-        count = len(self.file_paths)
-        self.file_count_label.config(text=f"已选择 {count} 个文件")
+    def update_file_count_generic(self, file_paths_var, count_label_var, start_button_var, pandas_check=False):
+        """通用更新文件计数方法（OGP和三次元兼容）"""
+        file_paths = getattr(self, file_paths_var)
+        count = len(file_paths)
+        count_label = getattr(self, count_label_var)
+        count_label.config(text=f"已选择 {count} 个文件")
 
         # 根据文件数量启用/禁用处理按钮
-        if count > 0:
-            self.start_button.config(state=tk.NORMAL)
+        start_button = getattr(self, start_button_var)
+        if count > 0 and (not pandas_check or PANDAS_AVAILABLE):
+            start_button.config(state=tk.NORMAL)
         else:
-            self.start_button.config(state=tk.DISABLED)
+            start_button.config(state=tk.DISABLED)
 
-    def show_file_context_menu(self, event):
-        """显示文件右键菜单"""
+    def show_file_context_menu_generic(self, event, tree_var, file_paths_var, remove_method):
+        """通用显示文件右键菜单方法（OGP和三次元兼容）"""
+        tree = getattr(self, tree_var)
         # 选择右键点击的项目
-        item = self.file_tree.identify_row(event.y)
+        item = tree.identify_row(event.y)
         if item:
-            self.file_tree.selection_set(item)
+            tree.selection_set(item)
 
             menu = tk.Menu(self.root, tearoff=0)
-            menu.add_command(label="打开文件", command=lambda: self.open_selected_file())
-            menu.add_command(label="打开所在文件夹", command=lambda: self.open_file_folder())
+            menu.add_command(label="打开文件", command=lambda: self.open_selected_file_generic(tree_var, file_paths_var))
+            menu.add_command(label="打开所在文件夹", command=lambda: self.open_file_folder_generic(tree_var, file_paths_var))
             menu.add_separator()
-            menu.add_command(label="从列表中移除", command=lambda: self.remove_selected_files())
+            menu.add_command(label="从列表中移除", command=remove_method)
             menu.tk_popup(event.x_root, event.y_root)
 
-    def open_selected_file(self):
-        """打开选中的文件"""
-        selected_items = self.file_tree.selection()
+    def open_selected_file_generic(self, tree_var, file_paths_var):
+        """通用打开选中文件方法（OGP和三次元兼容）"""
+        tree = getattr(self, tree_var)
+        file_paths = getattr(self, file_paths_var)
+        selected_items = tree.selection()
         if selected_items:
-            values = self.file_tree.item(selected_items[0], "values")
+            values = tree.item(selected_items[0], "values")
             if values:
                 filename = values[1]
                 # 找到完整路径
-                for file_path in self.file_paths:
+                for file_path in file_paths:
                     if os.path.basename(file_path) == filename:
                         try:
                             if os.name == 'nt':
@@ -338,15 +349,17 @@ class DataSorterApp:
                             messagebox.showwarning("打开失败", f"无法打开文件:\n{str(e)}")
                         break
 
-    def open_file_folder(self):
-        """打开文件所在文件夹"""
-        selected_items = self.file_tree.selection()
+    def open_file_folder_generic(self, tree_var, file_paths_var):
+        """通用打开文件所在文件夹方法（OGP和三次元兼容）"""
+        tree = getattr(self, tree_var)
+        file_paths = getattr(self, file_paths_var)
+        selected_items = tree.selection()
         if selected_items:
-            values = self.file_tree.item(selected_items[0], "values")
+            values = tree.item(selected_items[0], "values")
             if values:
                 filename = values[1]
                 # 找到完整路径
-                for file_path in self.file_paths:
+                for file_path in file_paths:
                     if os.path.basename(file_path) == filename:
                         folder_path = os.path.dirname(file_path)
                         try:
@@ -360,8 +373,87 @@ class DataSorterApp:
                             messagebox.showwarning("打开失败", f"无法打开文件夹:\n{str(e)}")
                         break
 
+    def browse_files(self):
+        """浏览并选择多个OGP文件"""
+        self.browse_files_generic(
+            title="选择OGP数据文件",
+            filetypes=[("Excel files", "*.xls *.xlsx"), ("All files", "*.*")],
+            file_paths_var="file_paths",
+            tree_var="file_tree",
+            count_label_var="file_count_label",
+            output_dir_var="output_dir",
+            start_button_var="start_button",
+            pandas_check=True
+        )
+
+    def browse_output_dir(self):
+        """浏览并选择OGP输出文件夹"""
+        self.browse_output_dir_generic(
+            title="选择输出文件夹",
+            output_dir_var="output_dir"
+        )
+
+    def clear_file_list(self):
+        """清空OGP文件列表"""
+        self.clear_file_list_generic(
+            file_paths_var="file_paths",
+            tree_var="file_tree",
+            count_label_var="file_count_label",
+            start_button_var="start_button",
+            pandas_check=True
+        )
+
+    def remove_selected_files(self):
+        """移除选中的OGP文件"""
+        self.remove_selected_files_generic(
+            tree_var="file_tree",
+            file_paths_var="file_paths",
+            count_label_var="file_count_label",
+            start_button_var="start_button",
+            pandas_check=True
+        )
+
+    def reorder_file_list(self):
+        """重新排序OGP文件列表"""
+        self.reorder_file_list_generic(
+            tree_var="file_tree",
+            file_paths_var="file_paths"
+        )
+
+    def update_file_count(self):
+        """更新OGP文件计数"""
+        self.update_file_count_generic(
+            file_paths_var="file_paths",
+            count_label_var="file_count_label",
+            start_button_var="start_button",
+            pandas_check=True
+        )
+
+    def show_file_context_menu(self, event):
+        """显示OGP文件右键菜单"""
+        self.show_file_context_menu_generic(
+            event=event,
+            tree_var="file_tree",
+            file_paths_var="file_paths",
+            remove_method=self.remove_selected_files
+        )
+
+    def open_selected_file(self):
+        """打开选中的OGP文件"""
+        self.open_selected_file_generic(
+            tree_var="file_tree",
+            file_paths_var="file_paths"
+        )
+
+    def open_file_folder(self):
+        """打开OGP文件所在文件夹"""
+        self.open_file_folder_generic(
+            tree_var="file_tree",
+            file_paths_var="file_paths"
+        )
+
     def start_batch_processing(self):
-        """开始批量处理"""
+        """开始批量处理OGP文件（OGP专用）"""
         if not self.file_paths:
             messagebox.showerror("错误", "请先选择要处理的文件！")
             return
@@ -387,12 +479,12 @@ class DataSorterApp:
         thread.start()
 
     def stop_processing(self):
-        """停止处理"""
+        """停止OGP处理（OGP专用）"""
         self.processing = False
         self.status_bar.config(text="正在停止处理...")
 
     def toggle_buttons(self, processing):
-        """切换按钮状态"""
+        """切换OGP按钮状态（OGP专用）"""
         if processing:
             self.start_button.config(state=tk.DISABLED)
             self.stop_button.config(state=tk.NORMAL)
@@ -401,7 +493,7 @@ class DataSorterApp:
             self.stop_button.config(state=tk.DISABLED)
 
     def process_files_thread(self):
-        """处理文件的线程函数"""
+        """处理OGP文件的线程函数（OGP专用）"""
         total_files = len(self.file_paths)
         success_count = 0
         fail_count = 0
@@ -412,28 +504,47 @@ class DataSorterApp:
         # 显示开始信息
         self.show_result_header(total_files)
 
-        for i, file_path in enumerate(self.file_paths, 1):
-            if not self.processing:
-                self.append_result("\n\n处理已停止！\n")
-                break
+        # 根据处理模式选择不同的处理方式
+        mode_text = "排序" if self.process_mode.get() == "sort" else "汇总"
 
-            # 根据处理模式显示不同文本
-            mode_text = "排序" if self.process_mode.get() == "sort" else "汇总"
-            self.status_bar.config(text=f"正在处理: {os.path.basename(file_path)}")
+        if self.process_mode.get() == "summary" and total_files > 1:
+            # 汇总模式且多个文件，使用合并方法
+            self.status_bar.config(text="正在合并多个文件到一个汇总文件...")
 
-            # 处理单个文件
-            success, message = self.ogp_processor.process_single_file(
-                file_path, i, self.process_mode.get(), self.file_format.get(),
-                self.header_lines.get(), self.output_dir.get(),
-                self.create_subfolder.get(), self.overwrite_existing.get()
+            # 调用合并方法
+            success, message, output_file = self.ogp_processor.merge_ogp_files(
+                self.file_paths, self.output_dir.get(), self.processing, 
+                self.create_subfolder.get()
             )
 
             if success:
-                success_count += 1
+                success_count = 1
                 self.append_result(f"✓ {message}\n")
             else:
-                fail_count += 1
+                fail_count = 1
                 self.append_result(f"✗ {message}\n")
+        else:
+            # 排序模式或单个文件，使用原有的处理方式
+            for i, file_path in enumerate(self.file_paths, 1):
+                if not self.processing:
+                    self.append_result("\n\n处理已停止！\n")
+                    break
+
+                self.status_bar.config(text=f"正在处理: {os.path.basename(file_path)}")
+
+                # 处理单个文件
+                success, message = self.ogp_processor.process_single_file(
+                    file_path, i, self.process_mode.get(), "format2",
+                    self.header_lines.get(), self.output_dir.get(),
+                    self.create_subfolder.get(), False
+                )
+
+                if success:
+                    success_count += 1
+                    self.append_result(f"✓ {message}\n")
+                else:
+                    fail_count += 1
+                    self.append_result(f"✗ {message}\n")
 
         # 处理完成
         self.processing = False
@@ -442,13 +553,11 @@ class DataSorterApp:
         # 显示总结
         self.show_result_summary(success_count, fail_count)
 
-        mode_text = "排序" if self.process_mode.get() == "sort" else "汇总"
         self.status_bar.config(text=f"批量处理完成: 成功 {success_count} 个，失败 {fail_count} 个")
 
     def show_result_header(self, total_files):
-        """显示结果头部信息"""
+        """显示OGP结果头部信息（OGP专用）"""
         mode_text = "排序" if self.process_mode.get() == "sort" else "汇总"
-        format_text = "自动检测" if self.file_format.get() == "auto" else self.file_format.get()
 
         result_info = f"{'=' * 70}\n"
         result_info += f"批量{mode_text}开始 - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
@@ -457,8 +566,7 @@ class DataSorterApp:
         result_info += f"文件总数: {total_files}\n"
         result_info += f"输出文件夹: {self.output_dir.get()}\n"
         result_info += f"表头行数: {self.header_lines.get()}\n"
-        result_info += f"处理模式: {mode_text}\n"
-        result_info += f"文件格式: {format_text}\n\n"
+        result_info += f"处理模式: {mode_text}\n\n"
 
         result_info += f"{'=' * 70}\n"
         result_info += "处理结果:\n"
@@ -467,13 +575,13 @@ class DataSorterApp:
         self.result_text_area.insert(1.0, result_info)
 
     def append_result(self, message):
-        """在结果区域追加信息"""
+        """在OGP结果区域追加信息（OGP专用）"""
         self.result_text_area.insert(tk.END, message)
         self.result_text_area.see(tk.END)
         self.root.update()
 
     def show_result_summary(self, success_count, fail_count):
-        """显示处理总结"""
+        """显示OGP处理总结（OGP专用）"""
         mode_text = "排序" if self.process_mode.get() == "sort" else "汇总"
 
         summary = f"\n{'=' * 70}\n"
@@ -615,164 +723,82 @@ class DataSorterApp:
 
     def browse_three_d_files(self):
         """浏览并选择多个Excel文件"""
-        if not PANDAS_AVAILABLE:
-            messagebox.showerror("错误", "pandas库未安装，无法处理Excel文件。\n请运行: pip install pandas openpyxl")
-            return
-
-        filenames = filedialog.askopenfilenames(
+        self.browse_files_generic(
             title="选择Excel文件",
-            filetypes=[("Excel files", "*.xlsx *.xls"), ("All files", "*.*")]
+            filetypes=[("Excel files", "*.xlsx *.xls"), ("All files", "*.*")],
+            file_paths_var="three_d_file_paths",
+            tree_var="three_d_file_tree",
+            count_label_var="three_d_file_count_label",
+            output_dir_var="three_d_output_dir",
+            start_button_var="three_d_start_button",
+            pandas_check=True
         )
-
-        if filenames:
-            for filename in filenames:
-                if filename not in self.three_d_file_paths:
-                    self.three_d_file_paths.append(filename)
-                    # 添加到Treeview
-                    index = len(self.three_d_file_paths)
-                    self.three_d_file_tree.insert("", "end", values=(
-                        index,
-                        os.path.basename(filename)
-                    ))
-
-            # 更新统计信息
-            self.update_three_d_file_count()
-
-            # 自动设置输出文件夹为第一个文件所在目录
-            if self.three_d_file_paths and (not self.three_d_output_dir.get() or self.three_d_output_dir.get() == os.path.expanduser("~")):
-                input_dir = os.path.dirname(self.three_d_file_paths[0])
-                self.three_d_output_dir.set(input_dir)
-
-            self.status_bar.config(text=f"已添加 {len(filenames)} 个Excel文件")
 
     def browse_three_d_output_dir(self):
         """浏览并选择输出文件夹"""
-        dirname = filedialog.askdirectory(
+        self.browse_output_dir_generic(
             title="选择输出文件夹",
-            initialdir=self.three_d_output_dir.get()
+            output_dir_var="three_d_output_dir"
         )
-        if dirname:
-            self.three_d_output_dir.set(dirname)
-            self.status_bar.config(text=f"输出文件夹: {dirname}")
 
     def clear_three_d_file_list(self):
-        """清空文件列表"""
-        if self.three_d_file_paths:
-            if messagebox.askyesno("确认", "确定要清空所有文件吗？"):
-                self.three_d_file_paths.clear()
-                # 清空Treeview
-                for item in self.three_d_file_tree.get_children():
-                    self.three_d_file_tree.delete(item)
-                self.update_three_d_file_count()
-                self.status_bar.config(text="已清空文件列表")
+        """清空三次元文件列表（三次元专用）"""
+        self.clear_file_list_generic(
+            file_paths_var="three_d_file_paths",
+            tree_var="three_d_file_tree",
+            count_label_var="three_d_file_count_label",
+            start_button_var="three_d_start_button",
+            pandas_check=True
+        )
 
     def remove_selected_three_d_files(self):
-        """移除选中的文件"""
-        selected_items = self.three_d_file_tree.selection()
-        if not selected_items:
-            messagebox.showinfo("提示", "请先选择要移除的文件")
-            return
-
-        # 确认移除
-        if messagebox.askyesno("确认", f"确定要移除选中的 {len(selected_items)} 个文件吗？"):
-            for item in selected_items:
-                values = self.three_d_file_tree.item(item, "values")
-                if values:
-                    # 从文件路径列表中移除
-                    filename = values[1]
-                    # 需要找到完整路径
-                    for file_path in self.three_d_file_paths[:]:
-                        if os.path.basename(file_path) == filename:
-                            self.three_d_file_paths.remove(file_path)
-                            break
-                # 从Treeview中移除
-                self.three_d_file_tree.delete(item)
-
-            # 重新排序
-            self.reorder_three_d_file_list()
-            self.update_three_d_file_count()
-            self.status_bar.config(text=f"已移除 {len(selected_items)} 个文件")
+        """移除选中的三次元文件（三次元专用）"""
+        self.remove_selected_files_generic(
+            tree_var="three_d_file_tree",
+            file_paths_var="three_d_file_paths",
+            count_label_var="three_d_file_count_label",
+            start_button_var="three_d_start_button",
+            pandas_check=True
+        )
 
     def reorder_three_d_file_list(self):
-        """重新排序文件列表"""
-        # 清空Treeview
-        for item in self.three_d_file_tree.get_children():
-            self.three_d_file_tree.delete(item)
-
-        # 重新添加
-        for i, filename in enumerate(self.three_d_file_paths, 1):
-            self.three_d_file_tree.insert("", "end", values=(
-                i,
-                os.path.basename(filename)
-            ))
+        """重新排序三次元文件列表（三次元专用）"""
+        self.reorder_file_list_generic(
+            tree_var="three_d_file_tree",
+            file_paths_var="three_d_file_paths"
+        )
 
     def update_three_d_file_count(self):
-        """更新文件计数"""
-        count = len(self.three_d_file_paths)
-        self.three_d_file_count_label.config(text=f"已选择 {count} 个文件")
-
-        # 根据文件数量启用/禁用处理按钮
-        if count > 0 and PANDAS_AVAILABLE:
-            self.three_d_start_button.config(state=tk.NORMAL)
-        else:
-            self.three_d_start_button.config(state=tk.DISABLED)
+        """更新三次元文件计数（三次元专用）"""
+        self.update_file_count_generic(
+            file_paths_var="three_d_file_paths",
+            count_label_var="three_d_file_count_label",
+            start_button_var="three_d_start_button",
+            pandas_check=True
+        )
 
     def show_three_d_file_context_menu(self, event):
-        """显示文件右键菜单"""
-        # 选择右键点击的项目
-        item = self.three_d_file_tree.identify_row(event.y)
-        if item:
-            self.three_d_file_tree.selection_set(item)
-
-            menu = tk.Menu(self.root, tearoff=0)
-            menu.add_command(label="打开文件", command=lambda: self.open_selected_three_d_file())
-            menu.add_command(label="打开所在文件夹", command=lambda: self.open_three_d_file_folder())
-            menu.add_separator()
-            menu.add_command(label="从列表中移除", command=lambda: self.remove_selected_three_d_files())
-            menu.tk_popup(event.x_root, event.y_root)
+        """显示三次元文件右键菜单（三次元专用）"""
+        self.show_file_context_menu_generic(
+            event=event,
+            tree_var="three_d_file_tree",
+            file_paths_var="three_d_file_paths",
+            remove_method=self.remove_selected_three_d_files
+        )
 
     def open_selected_three_d_file(self):
-        """打开选中的文件"""
-        selected_items = self.three_d_file_tree.selection()
-        if selected_items:
-            values = self.three_d_file_tree.item(selected_items[0], "values")
-            if values:
-                filename = values[1]
-                # 找到完整路径
-                for file_path in self.three_d_file_paths:
-                    if os.path.basename(file_path) == filename:
-                        try:
-                            if os.name == 'nt':
-                                os.startfile(file_path)
-                            elif os.name == 'posix':
-                                import subprocess
-                                subprocess.call(
-                                    ['open', file_path] if os.sys.platform == 'darwin' else ['xdg-open', file_path])
-                        except Exception as e:
-                            messagebox.showwarning("打开失败", f"无法打开文件:\n{str(e)}")
-                        break
+        """打开选中的三次元文件（三次元专用）"""
+        self.open_selected_file_generic(
+            tree_var="three_d_file_tree",
+            file_paths_var="three_d_file_paths"
+        )
 
     def open_three_d_file_folder(self):
-        """打开文件所在文件夹"""
-        selected_items = self.three_d_file_tree.selection()
-        if selected_items:
-            values = self.three_d_file_tree.item(selected_items[0], "values")
-            if values:
-                filename = values[1]
-                # 找到完整路径
-                for file_path in self.three_d_file_paths:
-                    if os.path.basename(file_path) == filename:
-                        folder_path = os.path.dirname(file_path)
-                        try:
-                            if os.name == 'nt':
-                                os.startfile(folder_path)
-                            elif os.name == 'posix':
-                                import subprocess
-                                subprocess.call(
-                                    ['open', folder_path] if os.sys.platform == 'darwin' else ['xdg-open', folder_path])
-                        except Exception as e:
-                            messagebox.showwarning("打开失败", f"无法打开文件夹:\n{str(e)}")
-                        break
+        """打开三次元文件所在文件夹（三次元专用）"""
+        self.open_file_folder_generic(
+            tree_var="three_d_file_tree",
+            file_paths_var="three_d_file_paths"
+        )
 
     def start_three_d_processing(self):
         """开始三次元数据处理"""
@@ -810,7 +836,7 @@ class DataSorterApp:
         self.status_bar.config(text="正在停止处理...")
 
     def toggle_three_d_buttons(self, processing):
-        """切换按钮状态"""
+        """切换三次元按钮状态（三次元专用）"""
         if processing:
             self.three_d_start_button.config(state=tk.DISABLED)
             self.three_d_stop_button.config(state=tk.NORMAL)
@@ -819,7 +845,7 @@ class DataSorterApp:
             self.three_d_stop_button.config(state=tk.DISABLED)
 
     def process_three_d_files_thread(self):
-        """处理三次元文件的线程函数"""
+        """处理三次元文件的线程函数（三次元专用）"""
         try:
             # 清空结果区域
             self.three_d_result_text_area.delete(1.0, tk.END)
@@ -848,7 +874,7 @@ class DataSorterApp:
             self.toggle_three_d_buttons(processing=False)
 
     def show_three_d_result_header(self, total_files):
-        """显示结果头部信息"""
+        """显示三次元结果头部信息（三次元专用）"""
         result_info = f"{'=' * 70}\n"
         result_info += f"三次元数据汇总开始 - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
         result_info += f"{'=' * 70}\n\n"
@@ -862,10 +888,7 @@ class DataSorterApp:
         self.three_d_result_text_area.insert(1.0, result_info)
 
     def append_three_d_result(self, message):
-        """在结果区域追加信息"""
+        """在三次元结果区域追加信息（三次元专用）"""
         self.three_d_result_text_area.insert(tk.END, message)
         self.three_d_result_text_area.see(tk.END)
         self.root.update()
-
-
-
