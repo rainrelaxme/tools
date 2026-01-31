@@ -12,7 +12,6 @@ import datetime
 import logging
 import os
 
-from docx import Document
 from docx.enum.section import WD_ORIENTATION
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.shared import RGBColor, Pt, Inches, Cm
@@ -22,8 +21,6 @@ from docx.oxml import CT_R
 from win32com import client as wc
 
 from modules.cm_sop_translate.config.config import config
-from modules.cm_sop_translate.main import create_new_document
-from modules.cm_sop_translate.translator import Translator
 from modules.common.log import setup_logger
 from modules.cm_sop_translate.template import apply_preamble_format, apply_approveTable_format, apply_template
 

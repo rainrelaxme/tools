@@ -224,12 +224,12 @@ def main():
     print("=" * 100)
     print("注意：仅支持运行于windows系统！！！")
     # 首先进行登录验证
-    # if not login():
-    #     exit()
+    if not login():
+        exit()
 
     # 可选：进行许可证检查
-    if not check_license():
-        exit()
+    # if not check_license():
+    #     exit()
 
     while True:
         print("请选择使用方式(请输入序号)：\n"
