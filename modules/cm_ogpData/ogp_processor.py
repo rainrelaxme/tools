@@ -13,11 +13,13 @@ import os
 from datetime import datetime
 import chardet
 
+
 class OGPProcessor:
     def __init__(self):
         pass
 
-    def process_single_file(self, file_path, index, process_mode, file_format, header_lines, output_dir, create_subfolder, overwrite_existing):
+    def process_single_file(self, file_path, index, process_mode, file_format, header_lines, output_dir,
+                            create_subfolder, overwrite_existing):
         """处理单个文件"""
         try:
             # 检测编码
@@ -476,10 +478,10 @@ class OGPProcessor:
             match = data_line_pattern.match(line)
             if match:
                 first_col = match.group(1).strip()
-                
+
                 # 初始化排序键
                 sort_key = None
-                
+
                 try:
                     # 检查是否以数字开头
                     if first_col[0].isdigit():
@@ -500,7 +502,7 @@ class OGPProcessor:
                         alpha_part = ''
                         num_part = ''
                         star_part = ''
-                        
+
                         # 找到第一个数字的位置
                         for j, char in enumerate(first_col):
                             if char.isdigit():
@@ -515,7 +517,7 @@ class OGPProcessor:
                                     num_part = remaining
                                     star_part = '0'
                                 break
-                        
+
                         # 转换数字部分为整数
                         try:
                             num_val = int(num_part)
@@ -523,13 +525,13 @@ class OGPProcessor:
                         except ValueError:
                             num_val = 0
                             star_val = 0
-                        
+
                         # 字母开头的排序键
                         sort_key = (1, alpha_part, num_val, star_val, i)
                 except (ValueError, IndexError):
                     # 如果解析失败，放到最后
                     sort_key = (2, '', 0, 0, i)
-                
+
                 data_with_keys.append((sort_key, line))
             else:
                 data_with_keys.append(((2, '', 0, 0, i), line))
@@ -612,7 +614,7 @@ class OGPProcessor:
                     alpha_part = ''
                     num_part = ''
                     star_part = ''
-                    
+
                     # 找到第一个数字的位置
                     for i, char in enumerate(main_part):
                         if char.isdigit():
@@ -627,7 +629,7 @@ class OGPProcessor:
                                 num_part = remaining
                                 star_part = '0'
                             break
-                    
+
                     # 转换数字部分为整数
                     try:
                         num_val = int(num_part)
@@ -635,7 +637,7 @@ class OGPProcessor:
                     except ValueError:
                         num_val = 0
                         star_val = 0
-                    
+
                     # 字母开头的排序键：(1, 字母部分, 数字部分, 星号部分, 后缀, 原始标签)
                     sort_key = (1, alpha_part, num_val, star_val, suffix, label_stripped)
 
@@ -688,14 +690,14 @@ class OGPProcessor:
     def rebuild_output_block(self, header, sorted_data):
         """重新构建输出区块"""
         result = header.copy()
-        
+
         # 确定最大实测值数量（即最大区块数）
         max_block_count = 0
         for sort_key, label, block_data in sorted_data:
             block_count = len(block_data)
             if block_count > max_block_count:
                 max_block_count = block_count
-        
+
         # 排序标题行
         title = result[-1].split('\t')
         label = title[0]
@@ -703,7 +705,7 @@ class OGPProcessor:
         nominal = title[2]
         upper_tol = title[4]
         lower_tol = title[5]
-        
+
         # 构建新的表头，添加实测值#1, 实测值#2等
         formatted_title = f"{label}\t{dim_type}\t{nominal}\t{upper_tol}\t{lower_tol}"
         for i in range(1, max_block_count + 1):

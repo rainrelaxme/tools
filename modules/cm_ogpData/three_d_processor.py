@@ -117,16 +117,15 @@ class ThreeDProcessor:
                     if mold_num not in all_data[key]['measurements']:
                         all_data[key]['measurements'][mold_num] = {}
 
-                    # 为当前尺寸初始化穴数索引（如果尚未初始化）
-                    size_key = size_str
-                    if size_key not in size_cavity_indices:
-                        size_cavity_indices[size_key] = start_cavity - 1  # 每个尺寸的穴数索引都从start_cavity-1开始
+                    # 为当前尺寸+轴组合初始化穴数索引（如果尚未初始化）
+                    if key not in size_cavity_indices:
+                        size_cavity_indices[key] = start_cavity - 1  # 每个尺寸+轴组合的穴数索引都从start_cavity-1开始
 
-                    # 添加实测值（第6列的数据），按照当前尺寸的穴数索引存储
+                    # 添加实测值（第6列的数据），按照当前尺寸+轴组合的穴数索引存储
                     if measured is not None and not pd.isna(measured):
-                        cavity_num = size_cavity_indices[size_key] + 1
+                        cavity_num = size_cavity_indices[key] + 1
                         all_data[key]['measurements'][mold_num][cavity_num] = measured
-                        size_cavity_indices[size_key] += 1
+                        size_cavity_indices[key] += 1
 
             # 检查产品名是否一致
             if len(set(product_names)) > 1:
@@ -174,9 +173,15 @@ class ThreeDProcessor:
             
             # 提取穴数范围的开始和结束值
             try:
-                start_cavity = int(cavity_range_str.split('~')[0].replace('穴', ''))
-                end_cavity = int(cavity_range_str.split('~')[1].replace('穴', ''))
-                cavity_range = (start_cavity, end_cavity)
+                if '~' in cavity_range_str:
+                    # 范围格式："1穴~16穴"
+                    start_cavity = int(cavity_range_str.split('~')[0].replace('穴', ''))
+                    end_cavity = int(cavity_range_str.split('~')[1].replace('穴', ''))
+                    cavity_range = (start_cavity, end_cavity)
+                else:
+                    # 单个穴数格式："1穴"
+                    cavity_num = int(cavity_range_str.replace('穴', ''))
+                    cavity_range = (cavity_num, cavity_num)  # 开始和结束都是同一个值
             except:
                 cavity_range = None
             
@@ -272,25 +277,6 @@ class ThreeDProcessor:
         # 排序模序号和穴序号
         sorted_mold_nums = sorted(all_mold_nums)
         sorted_cavity_nums = sorted(all_cavity_nums)
-
-        # 标题行（去除"描述"列）
-        header = ['尺寸', '轴', 'NOMINAL', '+TOL', '-TOL']
-        
-        # 根据布局模式添加实测值列标题
-        if layout_mode == "horizontal":
-            # 横排模式：按照"穴数-#模数"的格式命名
-            # 排列顺序：第1模1穴，第2模1穴...第32模1穴，第1模2穴，以此类推
-            for cavity_num in sorted_cavity_nums:
-                for mold_num in sorted_mold_nums:
-                    header.append(f'{cavity_num}-#{mold_num}')
-        else:
-            # 竖排模式：按照"#模数-穴数"的格式命名
-            # 排列顺序：第1模1穴，第1模2穴...第1模32穴，第2模1穴，第2模2穴，以此类推
-            for mold_num in sorted_mold_nums:
-                for cavity_num in sorted_cavity_nums:
-                    header.append(f'#{mold_num}-{cavity_num}')
-
-        output_rows.append(header)
 
         # 数据行（按尺寸结合轴排序）
         def get_sort_key(key):
@@ -393,31 +379,89 @@ class ThreeDProcessor:
         
         sorted_keys = sorted(all_data.keys(), key=get_sort_key)
 
-        for key in sorted_keys:
-            size, axis = key
-            data = all_data[key]
-
-            row = [
-                size,  # 第1列：尺寸（源文件第1列）
-                axis,  # 第2列：轴（源文件第4列）
-                data['nominal'] if pd.notna(data['nominal']) else '',  # 第3列：NOMINAL（源文件第5列）
-                data['upper_tol'] if pd.notna(data['upper_tol']) else '',  # 第4列：+TOL（源文件第7列）
-                data['lower_tol'] if pd.notna(data['lower_tol']) else ''  # 第5列：-TOL（源文件第8列）
-            ]
-
-            # 根据布局模式添加实测值
-            if layout_mode == "horizontal":
-                # 横排模式：按照"穴数-#模数"的顺序排列
-                for cavity_num in sorted_cavity_nums:
+        if layout_mode == "horizontal":
+            # 横排模式：每3穴换行输出
+            # 分组穴数
+            group_size = 3
+            
+            # 计算分组数
+            num_cavities = len(sorted_cavity_nums)
+            num_groups = (num_cavities + group_size - 1) // group_size
+            
+            # 对穴数进行分组
+            cavity_groups = []
+            for i in range(num_groups):
+                start_idx = i * group_size
+                end_idx = min(start_idx + group_size, num_cavities)
+                cavity_groups.append(sorted_cavity_nums[start_idx:end_idx])
+            
+            # 为每个分组生成输出
+            for group_idx, cavity_group in enumerate(cavity_groups):
+                # 标题行（去除"描述"列）
+                header = ['尺寸', '轴', 'NOMINAL', '+TOL', '-TOL']
+                
+                # 添加实测值列标题
+                for cavity_num in cavity_group:
                     for mold_num in sorted_mold_nums:
-                        # 查找对应模序号和穴序号的测量值
-                        if mold_num in data['measurements'] and cavity_num in data['measurements'][mold_num]:
-                            row.append(data['measurements'][mold_num][cavity_num])
-                        else:
-                            row.append('')
-            else:
-                # 竖排模式：按照"#模数-穴数"的顺序排列
+                        header.append(f'{cavity_num}-#{mold_num}')
+                
+                output_rows.append(header)
+                
+                # 为每个尺寸生成数据行
+                for key in sorted_keys:
+                    size, axis = key
+                    data = all_data[key]
+
+                    row = [
+                        size,  # 第1列：尺寸（源文件第1列）
+                        axis,  # 第2列：轴（源文件第4列）
+                        data['nominal'] if pd.notna(data['nominal']) else '',  # 第3列：NOMINAL（源文件第5列）
+                        data['upper_tol'] if pd.notna(data['upper_tol']) else '',  # 第4列：+TOL（源文件第7列）
+                        data['lower_tol'] if pd.notna(data['lower_tol']) else ''  # 第5列：-TOL（源文件第8列）
+                    ]
+
+                    # 添加实测值
+                    for cavity_num in cavity_group:
+                        for mold_num in sorted_mold_nums:
+                            # 查找对应模序号和穴序号的测量值
+                            if mold_num in data['measurements'] and cavity_num in data['measurements'][mold_num]:
+                                row.append(data['measurements'][mold_num][cavity_num])
+                            else:
+                                row.append('')
+
+                    output_rows.append(row)
+                
+                # 在分组之间添加空行（最后一组除外）
+                if group_idx < num_groups - 1:
+                    output_rows.append([''] * len(header))
+        else:
+            # 竖排模式：按模次分组，第6列为模次，第7列开始为各穴实测值
+            # 标题行（去除"描述"列）
+            header = ['尺寸', '轴', 'NOMINAL', '+TOL', '-TOL', '模次']
+            
+            # 添加实测值列标题（穴数）
+            for cavity_num in sorted_cavity_nums:
+                header.append(f'{cavity_num}穴')
+
+            output_rows.append(header)
+
+            # 为每个尺寸生成数据行（按模次分组）
+            for key in sorted_keys:
+                size, axis = key
+                data = all_data[key]
+
+                # 为每个模次生成一行数据
                 for mold_num in sorted_mold_nums:
+                    row = [
+                        size,  # 第1列：尺寸（源文件第1列）
+                        axis,  # 第2列：轴（源文件第4列）
+                        data['nominal'] if pd.notna(data['nominal']) else '',  # 第3列：NOMINAL（源文件第5列）
+                        data['upper_tol'] if pd.notna(data['upper_tol']) else '',  # 第4列：+TOL（源文件第7列）
+                        data['lower_tol'] if pd.notna(data['lower_tol']) else '',  # 第5列：-TOL（源文件第8列）
+                        f'#{mold_num}'  # 第6列：模次
+                    ]
+
+                    # 添加各穴实测值
                     for cavity_num in sorted_cavity_nums:
                         # 查找对应模序号和穴序号的测量值
                         if mold_num in data['measurements'] and cavity_num in data['measurements'][mold_num]:
@@ -425,7 +469,7 @@ class ThreeDProcessor:
                         else:
                             row.append('')
 
-            output_rows.append(row)
+                    output_rows.append(row)
 
         # 创建DataFrame
         output_df = pd.DataFrame(output_rows)
@@ -441,27 +485,47 @@ class ThreeDProcessor:
         else:
             output_folder = output_dir
         
-        # 使用"产品名+时间"格式命名输出文件
-        output_filename = f"{product_name}_{timestamp}.xlsx"
+        # 使用"产品名+横排/竖排+时间"格式命名输出文件
+        layout_prefix = "横排" if layout_mode == "horizontal" else "竖排"
+        output_filename = f"{product_name}_{layout_prefix}_{timestamp}.xlsx"
         output_file = os.path.join(output_folder, output_filename)
 
         # 保存为Excel文件
         output_df.to_excel(output_file, index=False, header=False, engine='openpyxl')
 
-        # 加载Excel文件并冻结F2单元格，设置标题行加粗
+        # 加载Excel文件并设置标题行和尺寸列加粗，根据布局模式决定是否冻结
         try:
             wb = load_workbook(output_file)
             ws = wb.active
+
+            # 根据布局模式设置不同的冻结列
+            if layout_mode == "horizontal":
+                # 横排模式：冻结F列（使用F1单元格作为冻结点）
+                ws.freeze_panes = 'F1'
+            else:
+                # 竖排模式：冻结G列（使用G1单元格作为冻结点）
+                ws.freeze_panes = 'G1'
             
-            # 冻结F2单元格（即冻结行1和列A-E）
-            # 选择F2单元格作为冻结点
-            ws.freeze_panes = 'F2'
-            
-            # 设置标题行（第一行）文字加粗
+            # 设置标题行文字加粗和尺寸列加粗
             from openpyxl.styles import Font
             bold_font = Font(bold=True)
-            for cell in ws[1]:
-                cell.font = bold_font
+            
+            # 加粗标题行
+            if layout_mode == "horizontal":
+                # 横排模式：每个分组的第一行都是标题行
+                for row in ws.iter_rows():
+                    if row[0].value == "尺寸":
+                        for cell in row:
+                            cell.font = bold_font
+            else:
+                # 竖排模式：只有第一行是标题行
+                for cell in ws[1]:
+                    cell.font = bold_font
+            
+            # 加粗尺寸列（第一列）
+            for row in ws.iter_rows():
+                if row[0].value and row[0].value != "尺寸":  # 排除标题行的"尺寸"单元格
+                    row[0].font = bold_font
             
             # 保存修改
             wb.save(output_file)
